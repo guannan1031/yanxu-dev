@@ -99,6 +99,19 @@ class EvidenceTests(unittest.TestCase):
         new["collection_seconds"] = 99
         self.assertEqual(compare(saved, new)["status"], "UNCHANGED")
 
+    def test_requirement_body_change_invalidates(self):
+        saved = self.snapshot()
+        new = copy.deepcopy(saved)
+        new["pr"]["body"] = "New acceptance requirement"
+        self.assertEqual(compare(saved, new)["changes"], ["body"])
+
+    def test_previous_evidence_schema_remains_verifiable(self):
+        current = self.snapshot()
+        legacy = copy.deepcopy(current)
+        legacy["schema_version"] = 1
+        legacy["binding"] = binding(legacy)
+        self.assertEqual(compare(legacy, current)["status"], "UNCHANGED")
+
     def test_old_approval_not_counted_and_revocation_wins(self):
         self.gh.reviews = [{"id": 1, "user": {"login": "reviewer"}, "state": "APPROVED", "commit_id": "old"}]
         self.assertEqual(assess(self.snapshot())["current_head_approvals"], [])
@@ -146,6 +159,12 @@ class EvidenceTests(unittest.TestCase):
         valid["findings"] = ["not an object"]
         with self.assertRaises(ReviewError):
             validate_answer(valid)
+
+    def test_ai_redaction_preserves_json_structure(self):
+        answer = {"summary": 'token=abc"', "findings": [], "repair_plan": [], "suggested_patch": "", "limitations": []}
+        result = validate_answer(answer)
+        self.assertIn("[REDACTED]", result["summary"])
+        self.assertEqual(set(result), set(answer))
 
     def test_cli_preserves_evidence_when_ai_fails(self):
         with tempfile.TemporaryDirectory() as temp, patch("yanxu.cli.capture", return_value=self.snapshot()), patch("yanxu.cli.diagnose", side_effect=ReviewError("offline")):

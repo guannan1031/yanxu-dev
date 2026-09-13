@@ -41,7 +41,12 @@ def validate_answer(answer: dict) -> dict:
     for finding in answer["findings"]:
         if not isinstance(finding, dict) or set(finding) != {"severity", "path", "evidence", "recommendation"} or not all(isinstance(v, str) for v in finding.values()):
             raise ReviewError("Malformed AI finding")
-    return json.loads(redact(json.dumps(answer, ensure_ascii=False)))
+    # Redact string values rather than serialized JSON, whose quotes must stay intact.
+    return {"summary": redact(answer["summary"]),
+            "findings": [{k: redact(v) for k, v in item.items()} for item in answer["findings"]],
+            "repair_plan": [redact(x) for x in answer["repair_plan"]],
+            "suggested_patch": redact(answer["suggested_patch"]),
+            "limitations": [redact(x) for x in answer["limitations"]]}
 
 
 def diagnose(snapshot: dict, timeout: int = 240) -> dict:

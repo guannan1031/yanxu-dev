@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "snapshot": {
+    "schema_version": 1,
+    "repo": "guannan1031/yanxu-dev",
+    "pr": {
+      "number": 1,
+      "url": "https://github.com/guannan1031/yanxu-dev/pull/1",
+      "title": "Demo: diagnose and fix a pagination regression",
+      "body": "This PR is a controlled public demonstration using synthetic code. A one-based pagination contract is intentionally broken to produce real CI failure. Yanxu will collect the PR diff and failed CI, produce an AI diagnosis, and verify that its report becomes stale after the fix. The independent tests stay unchanged. This is functional validation, not a productivity benchmark.",
+      "state": "open",
+      "draft": false,
+      "merged": false,
+      "head_sha": "74e0c96166d0adaca4aeff0705a25be7439bd1ac",
+      "base_sha": "cf0311606643d34f7a0d91633b717d305da577ca",
+      "base_ref": "main",
+      "changed_files": 1,
+      "mergeable": true,
+      "mergeable_state": "unstable"
+    },
+    "files": [
+      {
+        "path": "sample/pagination.py",
+        "status": "modified",
+        "patch": "@@ -2,5 +2,5 @@ def paginate(items, page, size):\n     \"\"\"Return a one-based page; reject non-positive page and size.\"\"\"\n     if page < 1 or size < 1:\n         raise ValueError(\"page and size must be positive\")\n-    start = (page - 1) * size\n+    start = page * size\n     return items[start:start + size]",
+        "patch_complete": true,
+        "additions": 1,
+        "deletions": 1
+      }
+    ],
+    "checks": [
+      {
+        "id": 103714397291,
+        "name": "test (3.11)",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "url": "https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397291",
+        "details_url": "https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397291",
+        "app": "github-actions",
+        "summary": ""
+      },
+      {
+        "id": 103714397390,
+        "name": "test (3.13)",
+        "status": "completed",
+        "conclusion": "failure",
+        "url": "https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397390",
+        "details_url": "https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397390",
+        "app": "github-actions",
+        "summary": ""
+      }
+    ],
+    "statuses": [],
+    "reviews": [],
+    "logs": [
+      {
+        "run_id": "34753701587",
+        "excerpt": "test (3.13)\tIndependent contract and regression tests\t﻿2026-09-13T11:09:33.1476503Z ##[group]Run python -m unittest discover -s tests -v\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1477763Z ^[[36;1mpython -m unittest discover -s tests -v^[[0m\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1531704Z shell: /usr/bin/bash -e {0}\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1532477Z env:\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1533184Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.15/x64\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1535043Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib/pkgconfig\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1536461Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1537695Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1538926Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.15/x64\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1540173Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.15/x64/lib\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:33.1541219Z ##[endgroup]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1016621Z test_ai_schema_rejects_invalid_output (test_core.EvidenceTests.test_ai_schema_rejects_invalid_output) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1020890Z test_capture_time_does_not_invalidate (test_core.EvidenceTests.test_capture_time_does_not_invalidate) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1025033Z test_check_change_invalidates_even_when_head_unchanged (test_core.EvidenceTests.test_check_change_invalidates_even_when_head_unchanged) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1049867Z Collected GitHub evidence; Codex diagnosis is running…\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1061966Z test_cli_preserves_evidence_when_ai_fails (test_core.EvidenceTests.test_cli_preserves_evidence_when_ai_fails) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1065674Z test_commit_change_during_capture_rejected (test_core.EvidenceTests.test_commit_change_during_capture_rejected) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1073066Z test_failure_pending_cancelled_and_skipped_checks_block (test_core.EvidenceTests.test_failure_pending_cancelled_and_skipped_checks_block) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1077497Z test_head_and_base_change_invalidate_report (test_core.EvidenceTests.test_head_and_base_change_invalidate_report) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1081225Z test_html_escapes_untrusted_content_and_urls (test_core.EvidenceTests.test_html_escapes_untrusted_content_and_urls) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1085491Z test_missing_patch_and_check_overflow_are_incomplete (test_core.EvidenceTests.test_missing_patch_and_check_overflow_are_incomplete) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1088927Z test_no_ci_is_not_a_green_light (test_core.EvidenceTests.test_no_ci_is_not_a_green_light) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1092195Z test_old_approval_not_counted_and_revocation_wins (test_core.EvidenceTests.test_old_approval_not_counted_and_revocation_wins) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1095276Z test_redaction (test_core.EvidenceTests.test_redaction) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1098062Z test_repo_argument_rejects_shell_and_urls (test_core.EvidenceTests.test_repo_argument_rejects_shell_and_urls) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1101656Z test_same_repo_failed_logs_collected_only_when_requested (test_core.EvidenceTests.test_same_repo_failed_logs_collected_only_when_requested) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1105619Z test_success_is_manual_review_never_merge_authorization (test_core.EvidenceTests.test_success_is_manual_review_never_merge_authorization) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1109110Z test_untrusted_log_url_is_never_executed (test_core.EvidenceTests.test_untrusted_log_url_is_never_executed) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1114990Z test_verify_detects_tampered_saved_fingerprint (test_core.EvidenceTests.test_verify_detects_tampered_saved_fingerprint) ... yanxu: Saved evidence fingerprint mismatch\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1117964Z ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1119682Z test_empty_and_beyond_end (test_sample.PaginationTests.test_empty_and_beyond_end) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1123090Z test_first_page (test_sample.PaginationTests.test_first_page) ... FAIL\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1127009Z test_invalid_arguments (test_sample.PaginationTests.test_invalid_arguments) ... ok\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1130828Z test_last_partial_page (test_sample.PaginationTests.test_last_partial_page) ... FAIL\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1132750Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1133535Z ======================================================================\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1136589Z FAIL: test_first_page (test_sample.PaginationTests.test_first_page)\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1139151Z ----------------------------------------------------------------------\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1141409Z Traceback (most recent call last):\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1151403Z   File \"/home/runner/work/yanxu-dev/yanxu-dev/tests/test_sample.py\", line 8, in test_first_page\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1155171Z     self.assertEqual(paginate([1, 2, 3, 4, 5], 1, 2), [1, 2])\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1157706Z     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1160024Z AssertionError: Lists differ: [3, 4] != [1, 2]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1161450Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1162241Z First differing element 0:\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1164123Z 3\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1165520Z 1\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1166290Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1166941Z - [3, 4]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1168220Z + [1, 2]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1168921Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1169806Z ======================================================================\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1172674Z FAIL: test_last_partial_page (test_sample.PaginationTests.test_last_partial_page)\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1175928Z ----------------------------------------------------------------------\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1178289Z Traceback (most recent call last):\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1181535Z   File \"/home/runner/work/yanxu-dev/yanxu-dev/tests/test_sample.py\", line 11, in test_last_partial_page\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1185069Z     self.assertEqual(paginate([1, 2, 3, 4, 5], 3, 2), [5])\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1187395Z     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1189521Z AssertionError: Lists differ: [] != [5]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1190792Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1191853Z Second list contains 1 additional elements.\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1193698Z First extra element 0:\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1195274Z 5\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1195887Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1196406Z - []\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1197697Z + [5]\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1198981Z ?  +\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1199731Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1199785Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1200733Z ----------------------------------------------------------------------\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1202767Z Ran 21 tests in 0.012s\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1203650Z \ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1204482Z FAILED (failures=2)\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1205918Z {\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1207657Z   \"report\": \"/tmp/tmpwpoz2vz7/20260913-110934-8fec4efe/report.html\",\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1210339Z   \"evidence\": \"/tmp/tmpwpoz2vz7/20260913-110934-8fec4efe/evidence.json\",\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1212679Z   \"assessment\": \"MANUAL_REVIEW\",\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1214611Z   \"ai\": \"failed\",\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1216164Z   \"elapsed_seconds\": 0.001\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1217773Z }\ntest (3.13)\tIndependent contract and regression tests\t2026-09-13T11:09:34.1310446Z ##[error]Process completed with exit code 1.\n",
+        "truncated": false
+      }
+    ],
+    "complete": true,
+    "warnings": [],
+    "captured_at": "2026-09-13T11:09:53.303952+00:00",
+    "collection_seconds": 7.82,
+    "binding": "8ab12be5957e53f05d0500cfe745dba570b7a6d3cbeba30ae9196227450c94cc"
+  },
+  "assessment": {
+    "status": "BLOCKED",
+    "blockers": [
+      "Check test (3.11): cancelled",
+      "Check test (3.13): failure"
+    ],
+    "sensitive_paths": [],
+    "current_head_approvals": [],
+    "auto_merge_allowed": false,
+    "policy_note": "Advisory only. Required checks, CODEOWNERS and GitHub rules are not fully evaluated. Never an approval or merge authorization."
+  },
+  "ai": {
+    "status": "completed",
+    "executor": "codex-cli 0.137.0",
+    "model": "Codex default (not independently resolved)",
+    "elapsed_seconds": 29.032,
+    "usage": {
+      "input_tokens": 26575,
+      "cached_input_tokens": 0,
+      "output_tokens": 719,
+      "reasoning_output_tokens": 56
+    },
+    "cost_money": null,
+    "answer": {
+      "summary": "PR #1 修改了 `sample/pagination.py` 的分页起始下标计算，当前 CI 至少在 Python 3.13 上失败；Python 3.11 检查被取消，不能视为通过。",
+      "findings": [
+        {
+          "severity": "高",
+          "path": "sample/pagination.py",
+          "evidence": "PR diff 将 `start = (page - 1) * size` 改为 `start = page * size`。文件内文档字符串写明 `Return a one-based page`。CI 日志 `test (3.13)` 显示 `tests/test_sample.py:8` 中 `paginate([1, 2, 3, 4, 5], 1, 2)` 实际返回 `[3, 4]`，期望 `[1, 2]`；`tests/test_sample.py:11` 中 `paginate([1, 2, 3, 4, 5], 3, 2)` 实际返回 `[]`，期望 `[5]`。",
+          "recommendation": "恢复一基页码的偏移计算：`start = (page - 1) * size`。"
+        }
+      ],
+      "repair_plan": [
+        "观察：`test (3.13)` 运行 `python -m unittest discover -s tests -v`，21 个测试中 2 个失败，均指向分页返回窗口后移。",
+        "假设：项目的分页契约是页码从 1 开始，因为 `sample/pagination.py` 文档字符串和现有独立测试都按一基页码断言。",
+        "修复：只改回 `sample/pagination.py` 中 `start` 的计算，不修改测试。",
+        "验证：重新运行 `python -m unittest discover -s tests -v`，并确认 Python 3.13 失败项消失；同时需要重新触发或检查 Python 3.11，因为当前证据中该检查结论为 `cancelled`。"
+      ],
+      "suggested_patch": "diff --git a/sample/pagination.py b/sample/pagination.py\nindex 0000000..0000000 100644\n--- a/sample/pagination.py\n+++ b/sample/pagination.py\n@@ -2,5 +2,5 @@ def paginate(items, page, size):\n     \"\"\"Return a one-based page; reject non-positive page and size.\"\"\"\n     if page < 1 or size < 1:\n         raise ValueError(\"page and size must be positive\")\n-    start = page * size\n+    start = (page - 1) * size\n     return items[start:start + size]\n",
+      "limitations": [
+        "未执行任何命令或读取仓库文件；诊断仅基于提供的 UNTRUSTED_SNAPSHOT。",
+        "`test (3.11)` 的检查结论是 `cancelled`，没有可用失败或通过日志。",
+        "补丁中的 blob index 未知，因此以占位 `0000000..0000000` 表示，供人工审阅后应用。"
+      ]
+    }
+  },
+  "elapsed_seconds": 36.982,
+  "human_baseline_minutes": null,
+  "efficiency_improvement_percent": null
+}
