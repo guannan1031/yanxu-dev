@@ -14,6 +14,7 @@ from .patches import prepare
 from .test_runner import run_tests
 from .task import build_contract, render_contract
 from .benchmark import load_and_analyze, render_html as render_benchmark_html, render_markdown
+from .measure import record_observation
 
 
 def write_json(path: Path, value):
@@ -53,6 +54,21 @@ def main(argv=None):
     benchmark = sub.add_parser("benchmark", help="Analyze paired baseline and Yanxu delivery measurements")
     benchmark.add_argument("input", type=Path)
     benchmark.add_argument("--output", type=Path, default=Path("runs/benchmark"))
+    record = sub.add_parser("record", help="Append one baseline or Yanxu observation without overwriting existing data")
+    record.add_argument("dataset", type=Path)
+    record.add_argument("--scope", required=True)
+    record.add_argument("--task-id", required=True)
+    record.add_argument("--task-type", required=True)
+    record.add_argument("--variant", choices=("baseline", "yanxu"), required=True)
+    record.add_argument("--human-minutes", type=float, required=True)
+    quality = record.add_mutually_exclusive_group(required=True)
+    quality.add_argument("--quality-passed", dest="quality_passed", action="store_true")
+    quality.add_argument("--quality-failed", dest="quality_passed", action="store_false")
+    record.add_argument("--rework-count", type=int, default=0)
+    record.add_argument("--evidence", required=True, help="Local artifact path, commit, PR, run, or other reviewable reference")
+    comparability = record.add_mutually_exclusive_group(required=True)
+    comparability.add_argument("--same-scope", dest="same_scope", action="store_true")
+    comparability.add_argument("--different-scope", dest="same_scope", action="store_false")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -86,6 +102,12 @@ def main(argv=None):
             print(json.dumps({"status": result["status"], "claim_allowed": result["claim_allowed"],
                               "summary": result["summary"], "report": str(folder / "benchmark.html")},
                              ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "record":
+            result = record_observation(args.dataset, args.scope, args.task_id, args.task_type, args.variant,
+                                        args.human_minutes, args.quality_passed, args.rework_count,
+                                        args.evidence, args.same_scope)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]

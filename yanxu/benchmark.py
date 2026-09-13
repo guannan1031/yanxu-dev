@@ -16,7 +16,7 @@ def _minutes(value, label: str) -> float:
     return round(float(value), 3)
 
 
-def _side(value, label: str) -> dict:
+def _side(value, label: str, evidence_type: str) -> dict:
     if not isinstance(value, dict):
         raise ReviewError(f"{label} must be an object")
     quality = value.get("quality_passed")
@@ -25,10 +25,15 @@ def _side(value, label: str) -> dict:
         raise ReviewError(f"{label}.quality_passed must be true or false")
     if isinstance(rework, bool) or not isinstance(rework, int) or rework < 0:
         raise ReviewError(f"{label}.rework_count must be a non-negative integer")
+    evidence = value.get("evidence", "synthetic-example" if evidence_type == "synthetic" else None)
+    if not isinstance(evidence, str) or not evidence.strip() or len(evidence) > 500:
+        raise ReviewError(f"{label}.evidence must be a non-empty reference no longer than 500 characters")
     return {
         "human_minutes": _minutes(value.get("human_minutes"), f"{label}.human_minutes"),
         "quality_passed": quality,
         "rework_count": rework,
+        "evidence": redact(evidence.strip()),
+        "recorded_at": value.get("recorded_at"),
     }
 
 
@@ -57,8 +62,8 @@ def analyze(payload: dict) -> dict:
         same_scope = raw.get("same_scope")
         if not isinstance(same_scope, bool):
             raise ReviewError(f"{task_id}.same_scope must be true or false")
-        baseline = _side(raw.get("baseline"), f"{task_id}.baseline")
-        yanxu = _side(raw.get("yanxu"), f"{task_id}.yanxu")
+        baseline = _side(raw.get("baseline"), f"{task_id}.baseline", evidence_type)
+        yanxu = _side(raw.get("yanxu"), f"{task_id}.yanxu", evidence_type)
         eligible = same_scope and baseline["quality_passed"] and yanxu["quality_passed"]
         reason = None
         if not same_scope:
