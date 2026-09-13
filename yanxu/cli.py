@@ -11,6 +11,7 @@ from .ai import diagnose
 from .core import ReviewError, assess, binding, capture, compare, now
 from .report import render
 from .patches import prepare
+from .test_runner import run_tests
 
 
 def write_json(path: Path, value):
@@ -18,7 +19,7 @@ def write_json(path: Path, value):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="GitHub PR/CI diagnosis and isolated patch preparation. No remote writes or code execution.")
+    parser = argparse.ArgumentParser(description="GitHub PR/CI diagnosis, isolated patch preparation and explicit test replay.")
     sub = parser.add_subparsers(dest="command", required=True)
     review = sub.add_parser("review", help="Collect evidence and generate a local HTML report")
     review.add_argument("--repo", required=True, help="GitHub owner/repo")
@@ -34,6 +35,15 @@ def main(argv=None):
     fix.add_argument("--allow-path", action="append", required=True, help="Exact existing file allowed to change; repeat for each file")
     fix.add_argument("--output", type=Path, default=Path("runs"))
     fix.add_argument("--replay", action="store_true", help="Historical demonstration only; skip live GitHub verification and label result as replay")
+    run = sub.add_parser("test-fix", help="Apply a proposal to a full commit archive and run an explicit test command")
+    run.add_argument("evidence", type=Path)
+    run.add_argument("--checkout", type=Path, required=True)
+    run.add_argument("--allow-path", action="append", required=True)
+    run.add_argument("--output", type=Path, default=Path("runs"))
+    run.add_argument("--timeout", type=int, default=120)
+    run.add_argument("--replay", action="store_true", help="Historical demonstration only; skip live GitHub verification")
+    run.add_argument("--command", dest="test_command", nargs=argparse.REMAINDER, required=True,
+                     help="Executable and arguments after --command; shell syntax is rejected")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -41,6 +51,12 @@ def main(argv=None):
             result = prepare(evidence, args.checkout, args.allow_path, args.output, replay=args.replay)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
+        if args.command == "test-fix":
+            evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+            result = run_tests(evidence, args.checkout, args.allow_path, args.test_command, args.output,
+                               replay=args.replay, timeout=args.timeout)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0 if result["status"] == "COMPLETED" else 2
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:

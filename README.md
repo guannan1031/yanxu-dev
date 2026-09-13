@@ -1,14 +1,16 @@
 # 研序 · Yanxu Dev
 
-**把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告。**
+**把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.2 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，并将建议补丁应用到独立最小副本。适合开发者和维护者减少查改动、找检查记录、整理审查材料和手工转写建议的往返。
+v0.3 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，将建议补丁应用到独立副本并执行显式测试命令。适合开发者和维护者减少查改动、找检查记录、整理审查材料、验证修复和手工转写建议的往返。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
 已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[运行证据与简历表述](docs/VALIDATION.md) · [历史演示报告 HTML](docs/index.html)。
 
 v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
+
+v0.3 新增：[`test-fix` 隔离测试验证](docs/PATCH_PREPARATION.md#test-fix)。它使用记录的 commit 构建完整归档，应用同一建议补丁，执行开发者明确给出的测试命令，并保存通过、失败或超时证据。
 
 ## 快速开始
 
@@ -32,6 +34,10 @@ python -m yanxu verify runs/RUN_ID/evidence.json
 # 将 AI 建议应用到独立副本：必须明确授权每一个文件
 python -m yanxu prepare-fix runs/RUN_ID/evidence.json --checkout /path/to/repo --allow-path src/example.py
 
+# 在完整 commit 归档中应用建议并运行测试；--command 之后的参数原样传给可执行文件
+python -m yanxu test-fix --checkout /path/to/repo --allow-path src/example.py \
+  runs/RUN_ID/evidence.json --command python3.11 -m unittest discover -s tests -v
+
 # 重放仓库内已有的公开历史案例，不访问 GitHub，不制造新的失败 CI
 python -m yanxu prepare-fix docs/demo-evidence.json --checkout . --allow-path sample/pagination.py --replay
 
@@ -51,11 +57,12 @@ python -m unittest discover -s tests -v
 | 交付报告 | 汇总事实、建议、版本指纹和耗时 | 自包含 HTML、evidence.json、执行事件；AI 失败仍保留事实报告 |
 | 过期核验 | 重新读取同一 PR | head/base/checks/reviews/diff 变化时返回 `STALE`，退出码 2 |
 | 受限补丁准备 | 显式文件清单、已记录提交、AI 建议；默认重新核对 GitHub | 新目录中的最小源码副本、标准 diff、manifest；原代码不变，测试/隐藏文件/符号链接/重命名拒绝 |
+| 隔离修复验证 | 完整 commit 归档、同一建议补丁、显式测试命令和超时 | `COMPLETED`、`FAILED_TESTS` 或 `TIMED_OUT` manifest、测试日志；原 checkout 与远端不变 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
 
-`prepare-fix` 返回 `PREPARED_NOT_TESTED`：只说明补丁适用性和路径检查通过，**不代表测试通过**。副本仅包含涉及的文件，不是完整仓库或安全执行沙箱；工具不会在其中运行代码。只支持已有的 UTF-8/LF 普通文本文件。审查标准 diff 后，再由开发者通过正常分支与 CI 验证。`--replay` 明确标记历史回放，跳过在线新鲜度核验，不能作为当前 PR 的合并依据。
+`prepare-fix` 返回 `PREPARED_NOT_TESTED`：只说明补丁适用性和路径检查通过，**不代表测试通过**。`test-fix` 才会在临时完整归档中执行显式测试命令；它提供进程、目录和凭据环境隔离，但不是强化安全沙箱，不能运行不受信任的命令。只支持已有的 UTF-8/LF 普通文本文件。审查标准 diff 后，再由开发者通过正常分支与 CI 验证。`--replay` 明确标记历史回放，跳过在线新鲜度核验，不能作为当前 PR 的合并依据。
 
 ## 复用与自研
 
@@ -71,7 +78,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现上下文汇总、版本绑定、规则检查、结构化报告、过期核验与受限补丁准备；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、完整自动修复闭环、自动合并或生产部署，不应在简历中写成已完成。
+我们实现上下文汇总、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备与隔离测试验证；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动创建修复 PR、自动合并或生产部署，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 
