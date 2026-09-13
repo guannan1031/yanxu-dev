@@ -1,6 +1,6 @@
 # Contributor scope
 
-This is a read-only PR/CI evidence tool. Changes must preserve the following:
+GitHub access is read-only. The tool may prepare explicitly allowed patches in a fresh minimal copy; it never modifies source files in the caller's checkout or executes repository code. Changes must preserve the following:
 
 - AI-generated advice must never become approval, merge authorization, or a successful test result.
 - Reports bind to head, base, checks and reviews; new evidence requires re-verification.

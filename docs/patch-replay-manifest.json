@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-09-13T11:46:20.720934+00:00",
+  "status": "PREPARED_NOT_TESTED",
+  "mode": "historical_replay",
+  "repo": "guannan1031/yanxu-dev",
+  "pr": 1,
+  "head_sha": "74e0c96166d0adaca4aeff0705a25be7439bd1ac",
+  "evidence_binding": "8ab12be5957e53f05d0500cfe745dba570b7a6d3cbeba30ae9196227450c94cc",
+  "proposal_sha256": "7c84145b6b3ae847a957454007a55c2dd405218b8a1ed287378d272e7267b876",
+  "paths": [
+    "sample/pagination.py"
+  ],
+  "verification": {
+    "status": "NOT_CHECKED_REPLAY",
+    "auto_merge_allowed": false
+  },
+  "tests": "NOT_RUN",
+  "original_checkout_modified": false,
+  "remote_modified": false,
+  "auto_merge_allowed": false,
+  "diff_sha256": "7f07deed3932bbd3f12110ef021097d0f011f526f9dd8b69ef72df08b4c4208b"
+}

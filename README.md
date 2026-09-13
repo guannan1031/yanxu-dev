@@ -2,11 +2,13 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告。**
 
-v0.1 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败和提出补丁建议。适合开发者和维护者减少查改动、找检查记录、整理审查材料的往返。
+v0.2 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，并将建议补丁应用到独立最小副本。适合开发者和维护者减少查改动、找检查记录、整理审查材料和手工转写建议的往返。
 
-它不自动修改代码、批准 PR、merge 或部署。长期目标是完整研发交付平台，首版先验证这个具体环节的价值。
+它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
 已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[运行证据与简历表述](docs/VALIDATION.md) · [历史演示报告 HTML](docs/index.html)。
+
+v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
 
 ## 快速开始
 
@@ -27,6 +29,12 @@ python -m yanxu review --repo OWNER/REPO --pr 123 --ai --include-failed-logs
 # 打开命令输出中的 report.html；重新核对 evidence.json 是否过期
 python -m yanxu verify runs/RUN_ID/evidence.json
 
+# 将 AI 建议应用到独立副本：必须明确授权每一个文件
+python -m yanxu prepare-fix runs/RUN_ID/evidence.json --checkout /path/to/repo --allow-path src/example.py
+
+# 重放仓库内已有的公开历史案例，不访问 GitHub，不制造新的失败 CI
+python -m yanxu prepare-fix docs/demo-evidence.json --checkout . --allow-path sample/pagination.py --replay
+
 # 无需账号、网络或模型的自动化测试
 python -m unittest discover -s tests -v
 ```
@@ -42,9 +50,12 @@ python -m unittest discover -s tests -v
 | AI 诊断 | 将有范围上限的快照交给 Codex；结构化输出校验 | 有证据的发现、修复步骤、建议 diff、明确局限 |
 | 交付报告 | 汇总事实、建议、版本指纹和耗时 | 自包含 HTML、evidence.json、执行事件；AI 失败仍保留事实报告 |
 | 过期核验 | 重新读取同一 PR | head/base/checks/reviews/diff 变化时返回 `STALE`，退出码 2 |
+| 受限补丁准备 | 显式文件清单、已记录提交、AI 建议；默认重新核对 GitHub | 新目录中的最小源码副本、标准 diff、manifest；原代码不变，测试/隐藏文件/符号链接/重命名拒绝 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
+
+`prepare-fix` 返回 `PREPARED_NOT_TESTED`：只说明补丁适用性和路径检查通过，**不代表测试通过**。副本仅包含涉及的文件，不是完整仓库或安全执行沙箱；工具不会在其中运行代码。只支持已有的 UTF-8/LF 普通文本文件。审查标准 diff 后，再由开发者通过正常分支与 CI 验证。`--replay` 明确标记历史回放，跳过在线新鲜度核验，不能作为当前 PR 的合并依据。
 
 ## 复用与自研
 
@@ -60,7 +71,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现上下文汇总、版本绑定、规则检查、结构化报告和过期核验；编码/模型能力复用成熟执行器。v0.1 没有实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动修复、自动合并或生产部署，不应在简历中写成已完成。
+我们实现上下文汇总、版本绑定、规则检查、结构化报告、过期核验与受限补丁准备；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、完整自动修复闭环、自动合并或生产部署，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 
@@ -81,6 +92,10 @@ flowchart LR
 - 模型使用临时目录、只读沙箱，关闭 shell、子 Agent、应用工具和网页搜索；不继承 GitHub/cloud 凭据或用户 MCP 配置。建议补丁仅作文字展示。
 - 采集结果有长度上限，缺失/截断明确标识。私有仓库报告仍属于私有材料；正则脱敏只是辅助，不保证识别所有秘密。
 - 不需要把 API Key、Token 或客户代码放入本项目；登录由相应 CLI 管理。报告分享前应检查内容。
+
+## 为什么 GitHub 历史上有一次红灯
+
+2026-09-13 的 [演示运行 34753701587](https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587) 主动引入合成分页缺陷，以验证真实失败诊断。它已由后续提交修复；历史邮件或红灯不会随修复消失。[修复后 PR CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34753802102) 和 [合并后 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34753866731) 均通过。日常使用和后续回放不需要再主动制造失败的远端运行；失败场景通过预期失败断言测试。
 
 ## CI 与 CD
 
