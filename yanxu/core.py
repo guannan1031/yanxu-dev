@@ -61,7 +61,7 @@ class GitHub:
 
 def pr_summary(pr: dict) -> dict:
     return {
-        "number": pr["number"], "url": pr["html_url"], "title": pr["title"],
+        "number": pr["number"], "url": pr["html_url"], "title": redact(pr["title"]),
         "body": redact(pr.get("body") or "")[:10000], "state": pr["state"],
         "draft": pr.get("draft", False), "merged": pr.get("merged", False),
         "head_sha": pr["head"]["sha"], "base_sha": pr["base"]["sha"],
@@ -72,9 +72,12 @@ def pr_summary(pr: dict) -> dict:
 
 def binding(snapshot: dict) -> str:
     """Bind evidence to code, checks and reviews; fetch timestamps are irrelevant."""
+    pr_fields = ["number", "head_sha", "base_sha", "state", "draft", "merged"]
+    if snapshot.get("schema_version", 1) >= 2:
+        pr_fields += ["title", "body"]
     return digest({
         "repo": snapshot["repo"],
-        "pr": {k: snapshot["pr"][k] for k in ("number", "head_sha", "base_sha", "state", "draft", "merged")},
+        "pr": {k: snapshot["pr"][k] for k in pr_fields},
         "checks": snapshot["checks"], "statuses": snapshot["statuses"],
         "reviews": snapshot["reviews"], "files": snapshot["files"],
         "complete": snapshot["complete"],
@@ -127,11 +130,11 @@ def capture(repo: str, number: int, gh: GitHub | None = None, include_logs: bool
             except ReviewError:
                 warnings.append(f"Could not read failed logs for run {run_id}.")
     end_pr = pr_summary(gh.api(f"{root}/pulls/{number}"))
-    if any(pr[k] != end_pr[k] for k in ("head_sha", "base_sha", "state", "merged", "draft")):
+    if any(pr[k] != end_pr[k] for k in ("head_sha", "base_sha", "state", "merged", "draft", "title", "body")):
         raise ReviewError("PR changed while collecting evidence; run again.")
     if not complete:
         warnings.append("Some diffs/checks are missing or truncated; manual inspection required.")
-    snapshot = {"schema_version": 1, "repo": repo, "pr": pr, "files": files, "checks": checks,
+    snapshot = {"schema_version": 2, "repo": repo, "pr": pr, "files": files, "checks": checks,
                 "statuses": statuses, "reviews": reviews, "logs": logs, "complete": complete,
                 "warnings": warnings, "captured_at": now(), "collection_seconds": round(time.monotonic() - start, 3)}
     snapshot["binding"] = binding(snapshot)
@@ -175,10 +178,11 @@ def assess(snapshot: dict) -> dict:
 
 def compare(saved: dict, current: dict) -> dict:
     changes = []
-    for key in ("head_sha", "base_sha", "state", "draft", "merged"):
+    for key in ("head_sha", "base_sha", "state", "draft", "merged", "title", "body"):
         if saved["pr"][key] != current["pr"][key]:
             changes.append(key)
-    if binding(saved) != binding(current) and not changes:
+    same_schema = dict(current, schema_version=saved.get("schema_version", 1))
+    if binding(saved) != binding(same_schema) and not changes:
         changes.append("checks_reviews_or_diff")
     return {"status": "STALE" if changes else "UNCHANGED", "changes": changes,
             "verified_at": now(), "current_binding": binding(current), "auto_merge_allowed": False}

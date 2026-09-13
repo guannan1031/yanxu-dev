@@ -6,6 +6,8 @@ v0.1 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML
 
 它不自动修改代码、批准 PR、merge 或部署。长期目标是完整研发交付平台，首版先验证这个具体环节的价值。
 
+已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[运行证据与简历表述](docs/VALIDATION.md) · [历史演示报告 HTML](docs/index.html)。
+
 ## 快速开始
 
 需要 Python 3.11+、[GitHub CLI](https://cli.github.com/)；AI 模式额外需要已登录的 [Codex CLI](https://github.com/openai/codex)。本次兼容性以 Codex CLI 0.137.0 为准。
@@ -70,7 +72,7 @@ flowchart LR
 
 `人工时间减少率 = (基线人工分钟 - 使用研序的人工分钟) / 基线人工分钟 × 100%`
 
-要注明样本量、任务范围和观察限制；这个结果也不能直接外推成整个团队的开发效率。合成 PR 演示验证功能，不证明客户收益。实际验证记录与可用的简历表述见后续 `docs/VALIDATION.md`。
+要注明样本量、任务范围和观察限制；这个结果也不能直接外推成整个团队的开发效率。合成 PR 演示验证功能，不证明客户收益。实际验证记录与可用的简历表述见 [docs/VALIDATION.md](docs/VALIDATION.md)。
 
 ## 数据和权限
 

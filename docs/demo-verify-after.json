@@ -1,0 +1,9 @@
+{
+  "status": "STALE",
+  "changes": [
+    "head_sha"
+  ],
+  "verified_at": "2026-09-13T11:12:20.547159+00:00",
+  "current_binding": "1d7137965a25107890e69abfaffdf603732a0c25dd89a8ace9c7f00390564e17",
+  "auto_merge_allowed": false
+}
