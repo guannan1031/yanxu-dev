@@ -15,6 +15,7 @@ from .test_runner import run_tests
 from .task import build_contract, render_contract
 from .benchmark import load_and_analyze, render_html as render_benchmark_html, render_markdown
 from .measure import record_observation
+from .doctor import inspect_repo, write_report as write_doctor_report
 
 
 def write_json(path: Path, value):
@@ -69,6 +70,9 @@ def main(argv=None):
     comparability = record.add_mutually_exclusive_group(required=True)
     comparability.add_argument("--same-scope", dest="same_scope", action="store_true")
     comparability.add_argument("--different-scope", dest="same_scope", action="store_false")
+    doctor = sub.add_parser("doctor", help="Inspect local repository readiness for bounded AI coding")
+    doctor.add_argument("--repo", type=Path, default=Path("."))
+    doctor.add_argument("--output", type=Path, default=Path("runs/doctor"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -108,6 +112,9 @@ def main(argv=None):
                                         args.human_minutes, args.quality_passed, args.rework_count,
                                         args.evidence, args.same_scope)
             print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "doctor":
+            print(json.dumps(write_doctor_report(inspect_repo(args.repo), args.output), ensure_ascii=False, indent=2))
             return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
