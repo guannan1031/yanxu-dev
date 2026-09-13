@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.6 是可运行的命令行工具：从需求任务合同开始，读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，将建议补丁应用到独立副本并执行显式测试命令；最后记录配对任务并评测人工时间和质量。适合开发者和维护者减少查改动、找检查记录、整理审查材料、验证修复和手工转写建议的往返。
+v0.7 是可运行的命令行工具：先体检仓库并建立需求任务合同，再读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，将建议补丁应用到独立副本并执行显式测试命令；最后记录配对任务并评测人工时间和质量。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -17,6 +17,8 @@ v0.4 新增：[`task` 需求任务合同](docs/TASK_CONTRACT.md)。它只读取�
 v0.5 新增：[`benchmark` 配对提效评测](docs/EFFICIENCY_BENCHMARK.md)。它在范围一致且两边质量通过时计算观察到的人工时间减少率，并输出 JSON、Markdown 和 HTML 报告。
 
 v0.6 新增：[`record` 真实观察记录器](docs/MEASUREMENT_RECORDING.md)。它分两次记录基线与研序数据，保留人工分钟、质量、返工和证据引用；已有观察默认禁止覆盖。
+
+v0.7 新增：[`doctor` AI Coding 项目体检](docs/REPOSITORY_DOCTOR.md)。它检查规则、启动说明、构建、测试、CI 和密钥边界，只读取工程元数据，业务源码扫描数为 0。
 
 ## 快速开始
 
@@ -66,6 +68,9 @@ python -m yanxu record runs/observed.json --scope "Python bug fixes / 2026-09" \
   --quality-passed --rework-count 0 --evidence "PR-123/yanxu-report.json" --same-scope
 
 python -m yanxu benchmark runs/observed.json --output runs/observed-report
+
+# 开发前检查仓库是否具备受约束 AI Coding 的基本条件
+python -m yanxu doctor --repo . --output runs/doctor
 ```
 
 运行结果位于 `runs/`，默认不提交 Git。可选 `pip install -e .` 后使用 `yanxu` 命令。没有后台进程、数据库或浏览器扩展需要配置。
@@ -84,6 +89,7 @@ python -m yanxu benchmark runs/observed.json --output runs/observed-report
 | 需求任务合同 | 需求文本、规则/README/构建配置/CI 白名单上下文 | `task.json`、`task.md`、建议测试入口和验收条件；不扫描业务源码、不写远端 |
 | 配对提效评测 | 同范围任务的人工基线、研序用时、质量与返工记录 | `benchmark.json`、Markdown、HTML；不合格样本排除，少于 5 个真实有效任务只标记探索性 |
 | 真实观察记录 | 任务范围、基线/研序侧、人工分钟、质量、返工、证据引用 | 可追加的 observed JSON；完成度可见，同一侧不覆盖，范围变化拒绝 |
+| AI Coding 项目体检 | 项目规则、README、构建/测试/CI 和密钥边界 | `READY` 或 `NEEDS_WORK`、整改清单、JSON/Markdown/HTML；业务源码扫描数为 0 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
