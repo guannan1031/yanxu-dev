@@ -34,9 +34,9 @@ def validate_repo(repo: str) -> str:
     return repo
 
 
-def command(args: list[str], timeout: int = 60) -> str:
+def command(args: list[str], timeout: int = 60, env: dict | None = None) -> str:
     try:
-        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(args, capture_output=True, text=True, timeout=timeout, env=env)
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise ReviewError(f"{args[0]} unavailable or timed out") from exc
     if result.returncode:

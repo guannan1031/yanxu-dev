@@ -1,0 +1,10 @@
+{
+  "scope": "developer-run validation of reviewed public synthetic replay; not a generic product test runner",
+  "tests_run": 4,
+  "failures": 0,
+  "errors": 0,
+  "success": true,
+  "test_file_sha256": "bdbf7bc4888984ec9fa658d67fe65c44b2cb5b3e7a14d5b5e8685c14161ec9ea",
+  "test_file_unchanged": true,
+  "prepared_file_sha256": "e4f25ccb47cd3175073a2b313bf5de2fcc14d38a9526e7a48fe90c60f9d0fed7"
+}

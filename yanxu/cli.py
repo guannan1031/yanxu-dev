@@ -10,6 +10,7 @@ from pathlib import Path
 from .ai import diagnose
 from .core import ReviewError, assess, binding, capture, compare, now
 from .report import render
+from .patches import prepare
 
 
 def write_json(path: Path, value):
@@ -17,7 +18,7 @@ def write_json(path: Path, value):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Read-only GitHub PR/CI diagnosis. No merge or code execution.")
+    parser = argparse.ArgumentParser(description="GitHub PR/CI diagnosis and isolated patch preparation. No remote writes or code execution.")
     sub = parser.add_subparsers(dest="command", required=True)
     review = sub.add_parser("review", help="Collect evidence and generate a local HTML report")
     review.add_argument("--repo", required=True, help="GitHub owner/repo")
@@ -27,8 +28,19 @@ def main(argv=None):
     review.add_argument("--output", type=Path, default=Path("runs"))
     verify = sub.add_parser("verify", help="Re-fetch GitHub state; reject stale review evidence")
     verify.add_argument("evidence", type=Path)
+    fix = sub.add_parser("prepare-fix", help="Apply a proposed patch to a minimal independent copy; never run repository code")
+    fix.add_argument("evidence", type=Path)
+    fix.add_argument("--checkout", type=Path, required=True, help="Authorized local Git repository containing the recorded commit")
+    fix.add_argument("--allow-path", action="append", required=True, help="Exact existing file allowed to change; repeat for each file")
+    fix.add_argument("--output", type=Path, default=Path("runs"))
+    fix.add_argument("--replay", action="store_true", help="Historical demonstration only; skip live GitHub verification and label result as replay")
     args = parser.parse_args(argv)
     try:
+        if args.command == "prepare-fix":
+            evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
+            result = prepare(evidence, args.checkout, args.allow_path, args.output, replay=args.replay)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:
