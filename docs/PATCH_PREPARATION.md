@@ -42,7 +42,7 @@ python -m yanxu prepare-fix docs/demo-evidence.json \
 - [开发者独立验证](patch-replay-tests.json)
 - [准备后的标准 diff](patch-replay.diff)
 
-本版本地 35 项测试通过，新增范围覆盖了工作区保护、在线过期拦截、关闭 PR、回放不联网、路径越界、头部不一致、模式变更、符号链接和失败清单。
+本版本地 36 项测试通过，新增范围覆盖了工作区保护、在线过期拦截、关闭 PR、回放不联网、路径越界、头部不一致、模式变更、符号链接、二进制/行尾转换拒绝和失败清单。
 
 ## CI 邮件说明
 

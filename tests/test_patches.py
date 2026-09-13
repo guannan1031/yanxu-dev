@@ -125,6 +125,19 @@ class PatchTests(unittest.TestCase):
         with self.assertRaisesRegex(ReviewError, "Complete context"):
             self.prepare()
 
+    def test_binary_and_crlf_sources_fail_without_normalizing(self):
+        for content in (b"def value():\r\n    return 0\r\n", b"def value():\n    return 0\x00\n"):
+            with self.subTest(content=content):
+                self.source.write_bytes(content)
+                self.git("add", "sample/value.py")
+                self.git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "encoding fixture")
+                snap = self.evidence["snapshot"]
+                snap["pr"]["head_sha"] = self.git("rev-parse", "HEAD").strip()
+                snap["binding"] = binding(snap)
+                with self.assertRaisesRegex(ReviewError, "UTF-8/LF"):
+                    self.prepare()
+                self.assertEqual(self.source.read_bytes(), content)
+
 
 if __name__ == "__main__":
     unittest.main()

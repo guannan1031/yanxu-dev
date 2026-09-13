@@ -90,7 +90,7 @@ def prepare(evidence: dict, checkout: Path, allow_paths: list[str], output: Path
             raise ReviewError("Target exceeds 1 MB")
         originals[name] = git("-C", str(checkout), "cat-file", "blob", meta[2])
         raw = originals[name].encode("utf-8")
-        if hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() != meta[2]:
+        if b"\0" in raw or hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() != meta[2]:
             raise ReviewError("Only unchanged UTF-8/LF text decoding is supported")
         if meta[0] == "100755":
             executable.add(name)
