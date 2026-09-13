@@ -1,0 +1,20 @@
+{
+  "evidence_type": "synthetic",
+  "scope": "Synthetic Python bug-fix demonstration; not a productivity claim",
+  "records": [
+    {
+      "task_id": "demo-pagination-1",
+      "task_type": "bugfix",
+      "same_scope": true,
+      "baseline": {"human_minutes": 20, "quality_passed": true, "rework_count": 1},
+      "yanxu": {"human_minutes": 12, "quality_passed": true, "rework_count": 0}
+    },
+    {
+      "task_id": "demo-pagination-2",
+      "task_type": "bugfix",
+      "same_scope": true,
+      "baseline": {"human_minutes": 25, "quality_passed": true, "rework_count": 1},
+      "yanxu": {"human_minutes": 15, "quality_passed": true, "rework_count": 0}
+    }
+  ]
+}

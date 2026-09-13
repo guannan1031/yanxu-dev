@@ -13,6 +13,7 @@ from .report import render
 from .patches import prepare
 from .test_runner import run_tests
 from .task import build_contract, render_contract
+from .benchmark import load_and_analyze, render_html as render_benchmark_html, render_markdown
 
 
 def write_json(path: Path, value):
@@ -49,6 +50,9 @@ def main(argv=None):
     task.add_argument("requirement")
     task.add_argument("--repo", type=Path, default=Path("."))
     task.add_argument("--output", type=Path, default=Path("runs/tasks"))
+    benchmark = sub.add_parser("benchmark", help="Analyze paired baseline and Yanxu delivery measurements")
+    benchmark.add_argument("input", type=Path)
+    benchmark.add_argument("--output", type=Path, default=Path("runs/benchmark"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -71,6 +75,17 @@ def main(argv=None):
             print(json.dumps({"contract": str(folder / "task.json"), "markdown": str(folder / "task.md"),
                               "context_files": len(contract["context_files"]),
                               "test_commands": len(contract["suggested_test_commands"])}, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "benchmark":
+            result = load_and_analyze(args.input)
+            folder = args.output.resolve()
+            folder.mkdir(parents=True, exist_ok=True)
+            write_json(folder / "benchmark.json", result)
+            (folder / "benchmark.md").write_text(render_markdown(result), encoding="utf-8")
+            (folder / "benchmark.html").write_text(render_benchmark_html(result), encoding="utf-8")
+            print(json.dumps({"status": result["status"], "claim_allowed": result["claim_allowed"],
+                              "summary": result["summary"], "report": str(folder / "benchmark.html")},
+                             ensure_ascii=False, indent=2))
             return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
