@@ -1,4 +1,4 @@
-# v0.2：从诊断建议到可审查补丁
+# v0.3：从诊断建议到隔离验证
 
 日期：2026-09-13。
 
@@ -54,4 +54,20 @@ python -m yanxu prepare-fix docs/demo-evidence.json \
 
 > 在 PR/CI 诊断基础上实现受限补丁准备：按已记录提交构建独立最小副本，校验文件清单与补丁适用性，保护原工作区及独立测试，并记录补丁哈希和版本证据。
 
-尚未验证人工提效百分比。下一步是可隔离的测试执行与真实任务对照，再决定是否接入远端修复 PR。
+## test-fix：在修复副本中验证
+
+`test-fix` 将记录的 commit 归档到临时完整工作区，先校验并应用同一份 AI 建议补丁，再执行开发者通过 `--command` 明确给出的测试命令。命令以 `shell=False` 启动，不继承 GitHub/Codex 凭据，且有超时、输出长度和可执行文件白名单；这属于工程隔离，不是强化安全沙箱。结果写入 `manifest.json` 与 `test-output.log`：
+
+- `COMPLETED` / `PASSED`：补丁后的临时归档测试通过；
+- `FAILED_TESTS` / `FAILED`：测试进程返回非零；
+- `TIMED_OUT` / `TIMEOUT`：超过显式超时，进程组被终止。
+
+```bash
+python -m yanxu test-fix --checkout /path/to/authorized/repo \
+  --allow-path sample/pagination.py docs/demo-evidence.json \
+  --replay --command python3.11 -m unittest discover -s tests -v
+```
+
+历史回放结果：同一公开证据、同一记录 commit 和建议补丁，在完整归档中运行 21 项测试并通过；原 checkout 未修改，远端未写入。`--replay` 只用于复现历史，不代表当前 PR 仍然新鲜。
+
+本版本本地 44 项测试通过，覆盖测试通过、测试失败、超时、命令校验、在线过期拦截、回放不联网和原工作区保护。尚未宣称固定研发提效百分比；需用同类真实任务记录基线后再计算。
