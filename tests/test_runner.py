@@ -1,6 +1,7 @@
 import copy
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -50,7 +51,7 @@ class RunnerTests(unittest.TestCase):
 
     def test_patched_archive_runs_explicit_tests_and_preserves_checkout(self):
         before = (self.repo / "sample/value.py").read_text()
-        result = self.execute(["python3.11", "-m", "unittest", "discover", "-s", "tests", "-v"])
+        result = self.execute([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"])
         self.assertEqual(result["status"], "COMPLETED")
         self.assertEqual(result["tests"], "PASSED")
         self.assertEqual(result["exit_code"], 0)
@@ -59,19 +60,19 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(result["remote_modified"])
 
     def test_failed_test_is_recorded_and_nonzero(self):
-        result = self.execute(["python3.11", "-c", "raise SystemExit(4)"])
+        result = self.execute([sys.executable, "-c", "raise SystemExit(4)"])
         self.assertEqual(result["status"], "FAILED_TESTS")
         self.assertEqual(result["tests"], "FAILED")
         self.assertEqual(result["exit_code"], 4)
 
     def test_timeout_kills_process_group(self):
-        result = self.execute(["python3.11", "-c", "__import__('time').sleep(5)"], timeout=1)
+        result = self.execute([sys.executable, "-c", "__import__('time').sleep(5)"], timeout=1)
         self.assertEqual(result["status"], "TIMED_OUT")
         self.assertEqual(result["tests"], "TIMEOUT")
 
     def test_invalid_command_is_rejected_without_output(self):
         with self.assertRaisesRegex(ReviewError, "Shell syntax"):
-            self.execute(["python3.11", "-c", "print(1)", "|"])
+            self.execute([sys.executable, "-c", "print(1)", "|"])
         with self.assertRaisesRegex(ReviewError, "allowlist"):
             self.execute(["sh", "-c", "echo unsafe"])
 
@@ -79,17 +80,17 @@ class RunnerTests(unittest.TestCase):
         current = copy.deepcopy(self.evidence["snapshot"])
         current["pr"]["head_sha"] = "f" * 40
         with patch("yanxu.test_runner.capture", return_value=current), self.assertRaisesRegex(ReviewError, "stale"):
-            self.execute(["python3.11", "-m", "unittest"], replay=False)
+            self.execute([sys.executable, "-m", "unittest"], replay=False)
         self.assertFalse((self.root / "results").exists())
 
     def test_replay_never_calls_github(self):
         with patch("yanxu.test_runner.capture", side_effect=AssertionError("network")):
-            result = self.execute(["python3.11", "-m", "unittest"])
+            result = self.execute([sys.executable, "-m", "unittest"])
         self.assertEqual(result["verification"]["status"], "NOT_CHECKED_REPLAY")
 
     def test_command_requires_separate_arguments(self):
         with self.assertRaises(ReviewError):
-            test_command(["python3.11", "-c", "print(1)", "|"])
+            test_command([sys.executable, "-c", "print(1)", "|"])
         with self.assertRaises(ReviewError):
             test_command(["/tmp/custom-runner"])
 
