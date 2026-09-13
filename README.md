@@ -12,6 +12,8 @@ v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
 
 v0.3 新增：[`test-fix` 隔离测试验证](docs/PATCH_PREPARATION.md#test-fix)。它使用记录的 commit 构建完整归档，应用同一建议补丁，执行开发者明确给出的测试命令，并保存通过、失败或超时证据。
 
+v0.4 开发中新增：[`task` 需求任务合同](docs/TASK_CONTRACT.md)。它只读取项目规则、README、构建配置和 CI 工作流等白名单上下文，生成可交给开发者或 Agent 的 JSON / Markdown 合同。
+
 ## 快速开始
 
 需要 Python 3.11+、[GitHub CLI](https://cli.github.com/)；AI 模式额外需要已登录的 [Codex CLI](https://github.com/openai/codex)。本次兼容性以 Codex CLI 0.137.0 为准。
@@ -43,6 +45,9 @@ python -m yanxu prepare-fix docs/demo-evidence.json --checkout . --allow-path sa
 
 # 无需账号、网络或模型的自动化测试
 python -m unittest discover -s tests -v
+
+# 将需求和当前项目上下文固化成任务合同
+python -m yanxu task "Add a safe pagination endpoint" --repo . --output runs/tasks
 ```
 
 运行结果位于 `runs/`，默认不提交 Git。可选 `pip install -e .` 后使用 `yanxu` 命令。没有后台进程、数据库或浏览器扩展需要配置。
@@ -58,6 +63,7 @@ python -m unittest discover -s tests -v
 | 过期核验 | 重新读取同一 PR | head/base/checks/reviews/diff 变化时返回 `STALE`，退出码 2 |
 | 受限补丁准备 | 显式文件清单、已记录提交、AI 建议；默认重新核对 GitHub | 新目录中的最小源码副本、标准 diff、manifest；原代码不变，测试/隐藏文件/符号链接/重命名拒绝 |
 | 隔离修复验证 | 完整 commit 归档、同一建议补丁、显式测试命令和超时 | `COMPLETED`、`FAILED_TESTS` 或 `TIMED_OUT` manifest、测试日志；原 checkout 与远端不变 |
+| 需求任务合同 | 需求文本、规则/README/构建配置/CI 白名单上下文 | `task.json`、`task.md`、建议测试入口和验收条件；不扫描业务源码、不写远端 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
@@ -78,7 +84,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现上下文汇总、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备与隔离测试验证；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动创建修复 PR、自动合并或生产部署，不应在简历中写成已完成。
+我们实现项目上下文合同、上下文汇总、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备与隔离测试验证；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动创建修复 PR、自动合并或生产部署，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 
