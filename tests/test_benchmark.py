@@ -37,7 +37,9 @@ class BenchmarkTests(unittest.TestCase):
 
     def test_renderers_escape_untrusted_labels(self):
         result = analyze({"evidence_type": "synthetic", "scope": "<script>alert(1)</script>", "records": [record("<b>x</b>")]})
-        self.assertNotIn("<script>alert(1)</script>", render_html(result))
+        rendered = render_html(result)
+        self.assertNotIn("<script>alert(1)</script>", rendered)
+        self.assertIn('rel="icon" href="data:,"', rendered)
         self.assertIn("DEMO_ONLY", render_markdown(result))
 
     def test_invalid_measurements_are_rejected(self):
