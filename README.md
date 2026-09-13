@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.3 是可运行的命令行工具：读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，将建议补丁应用到独立副本并执行显式测试命令。适合开发者和维护者减少查改动、找检查记录、整理审查材料、验证修复和手工转写建议的往返。
+v0.5 是可运行的命令行工具：从需求任务合同开始，读取真实 GitHub PR，生成本地 HTML / JSON 报告，可调用现有 Codex CLI 诊断失败，将建议补丁应用到独立副本并执行显式测试命令；最后用配对任务评测人工时间和质量。适合开发者和维护者减少查改动、找检查记录、整理审查材料、验证修复和手工转写建议的往返。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -12,7 +12,9 @@ v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
 
 v0.3 新增：[`test-fix` 隔离测试验证](docs/PATCH_PREPARATION.md#test-fix)。它使用记录的 commit 构建完整归档，应用同一建议补丁，执行开发者明确给出的测试命令，并保存通过、失败或超时证据。
 
-v0.4 开发中新增：[`task` 需求任务合同](docs/TASK_CONTRACT.md)。它只读取项目规则、README、构建配置和 CI 工作流等白名单上下文，生成可交给开发者或 Agent 的 JSON / Markdown 合同。
+v0.4 新增：[`task` 需求任务合同](docs/TASK_CONTRACT.md)。它只读取项目规则、README、构建配置和 CI 工作流等白名单上下文，生成可交给开发者或 Agent 的 JSON / Markdown 合同。
+
+v0.5 新增：[`benchmark` 配对提效评测](docs/EFFICIENCY_BENCHMARK.md)。它在范围一致且两边质量通过时计算观察到的人工时间减少率，并输出 JSON、Markdown 和 HTML 报告。
 
 ## 快速开始
 
@@ -48,6 +50,9 @@ python -m unittest discover -s tests -v
 
 # 将需求和当前项目上下文固化成任务合同
 python -m yanxu task "Add a safe pagination endpoint" --repo . --output runs/tasks
+
+# 用配对任务记录生成提效报告；示例明确标记为 synthetic，不能作为收益结论
+python -m yanxu benchmark docs/benchmark-synthetic-example.json --output runs/benchmark
 ```
 
 运行结果位于 `runs/`，默认不提交 Git。可选 `pip install -e .` 后使用 `yanxu` 命令。没有后台进程、数据库或浏览器扩展需要配置。
@@ -64,6 +69,7 @@ python -m yanxu task "Add a safe pagination endpoint" --repo . --output runs/tas
 | 受限补丁准备 | 显式文件清单、已记录提交、AI 建议；默认重新核对 GitHub | 新目录中的最小源码副本、标准 diff、manifest；原代码不变，测试/隐藏文件/符号链接/重命名拒绝 |
 | 隔离修复验证 | 完整 commit 归档、同一建议补丁、显式测试命令和超时 | `COMPLETED`、`FAILED_TESTS` 或 `TIMED_OUT` manifest、测试日志；原 checkout 与远端不变 |
 | 需求任务合同 | 需求文本、规则/README/构建配置/CI 白名单上下文 | `task.json`、`task.md`、建议测试入口和验收条件；不扫描业务源码、不写远端 |
+| 配对提效评测 | 同范围任务的人工基线、研序用时、质量与返工记录 | `benchmark.json`、Markdown、HTML；不合格样本排除，少于 5 个真实有效任务只标记探索性 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
@@ -84,19 +90,19 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现项目上下文合同、上下文汇总、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备与隔离测试验证；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动创建修复 PR、自动合并或生产部署，不应在简历中写成已完成。
+我们实现项目上下文合同、上下文汇总、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备、隔离测试验证与配对提效评测；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动创建修复 PR、自动合并或生产部署，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 
 ## 效果如何测量
 
-当前不宣称研发效率提升百分比。报告中的秒数是一次采集与诊断的机器墙钟时间。
+当前还没有足够真实配对样本，因此不宣称研发效率提升百分比。报告中的秒数是一次采集与诊断的机器墙钟时间。
 
 比较“现有 AI Coding + 手动整理 PR/CI”与“同等模型 + 研序”，记录同类任务的人工操作、审查、更正、等待、失败和支持投入，质量通过后才计算：
 
 `人工时间减少率 = (基线人工分钟 - 使用研序的人工分钟) / 基线人工分钟 × 100%`
 
-要注明样本量、任务范围和观察限制；这个结果也不能直接外推成整个团队的开发效率。合成 PR 演示验证功能，不证明客户收益。实际验证记录与可用的简历表述见 [docs/VALIDATION.md](docs/VALIDATION.md)。
+`benchmark` 只纳入范围一致且基线、研序两边质量都通过的任务；少于 5 个真实有效配对任务标记 `EXPLORATORY`，合成数据标记 `DEMO_ONLY`。结果必须注明样本量、任务范围和观察限制，不能直接外推成整个团队的开发效率。实际验证记录与可用的简历表述见 [docs/VALIDATION.md](docs/VALIDATION.md)。
 
 ## 数据和权限
 
