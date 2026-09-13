@@ -43,9 +43,9 @@ def patch_paths(patch: str) -> list[str]:
                 raise ReviewError("Renames or quoted/ambiguous patch paths are unsupported")
             paths.append(safe_path(m[1]))
         elif line.startswith("--- "):
-            before.append(line[4:])
+            before.append(line[4:].split("\t", 1)[0])
         elif line.startswith("+++ "):
-            after.append(line[4:])
+            after.append(line[4:].split("\t", 1)[0])
     if not paths or len(paths) > 10 or len(paths) != len(set(paths)):
         raise ReviewError("Patch requires 1–10 unique files")
     if before != ["a/" + p for p in paths] or after != ["b/" + p for p in paths]:

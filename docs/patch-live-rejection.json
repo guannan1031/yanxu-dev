@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-09-13T11:54:43.219620+00:00",
+  "status": "FAILED",
+  "mode": "live_evidence",
+  "repo": "guannan1031/yanxu-dev",
+  "pr": 3,
+  "head_sha": "850097ddfb022179d8aa22a493d40132fdf8453e",
+  "evidence_binding": "7edc1b22f9b24a9c4cf0e3dd15a1cad50a7d867fd1b2a18764ba777a865ac7cf",
+  "proposal_sha256": "07d3d2bd40f97d3e938405e862ff01848aaa419cdc30618552b31e620e8f52f9",
+  "paths": [
+    "yanxu/patches.py"
+  ],
+  "verification": {
+    "status": "UNCHANGED",
+    "changes": [],
+    "verified_at": "2026-09-13T11:54:43.176835+00:00",
+    "current_binding": "7edc1b22f9b24a9c4cf0e3dd15a1cad50a7d867fd1b2a18764ba777a865ac7cf",
+    "auto_merge_allowed": false
+  },
+  "tests": "NOT_RUN",
+  "original_checkout_modified": false,
+  "remote_modified": false,
+  "auto_merge_allowed": false,
+  "error": "error: patch with only garbage at line 4\n"
+}

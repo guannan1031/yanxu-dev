@@ -95,6 +95,12 @@ class PatchTests(unittest.TestCase):
             with self.subTest(proposal=proposal), self.assertRaises(ReviewError):
                 patch_paths(proposal)
 
+    def test_tab_timestamp_headers_preserve_exact_paths(self):
+        proposal = PROPOSAL.replace("--- a/sample/value.py\n", "--- a/sample/value.py\t2026-09-13 00:00:00 +0000\n")
+        proposal = proposal.replace("+++ b/sample/value.py\n", "+++ b/sample/value.py\t2026-09-13 00:01:00 +0000\n")
+        self.evidence["ai"]["answer"]["suggested_patch"] = proposal
+        self.assertEqual(self.prepare()["status"], "PREPARED_NOT_TESTED")
+
     def test_explicit_allowlist_required(self):
         with self.assertRaisesRegex(ReviewError, "allowlist"):
             prepare(self.evidence, self.repo, ["sample/other.py"], self.root / "results", replay=True)
