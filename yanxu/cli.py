@@ -16,6 +16,7 @@ from .task import build_contract, render_contract
 from .benchmark import load_and_analyze, render_html as render_benchmark_html, render_markdown
 from .measure import record_observation
 from .doctor import inspect_repo, write_report as write_doctor_report
+from .workflow import run_workflow
 
 
 def write_json(path: Path, value):
@@ -73,6 +74,13 @@ def main(argv=None):
     doctor = sub.add_parser("doctor", help="Inspect local repository readiness for bounded AI coding")
     doctor.add_argument("--repo", type=Path, default=Path("."))
     doctor.add_argument("--output", type=Path, default=Path("runs/doctor"))
+    workflow = sub.add_parser("workflow", help="Run repository readiness, task contract and optional PR evidence stages")
+    workflow.add_argument("requirement")
+    workflow.add_argument("--repo", type=Path, default=Path("."))
+    workflow.add_argument("--github-repo", help="GitHub owner/repository; requires --pr")
+    workflow.add_argument("--pr", type=int, help="Open pull request number; requires --github-repo")
+    workflow.add_argument("--include-failed-logs", action="store_true")
+    workflow.add_argument("--output", type=Path, default=Path("runs/workflow"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -116,6 +124,12 @@ def main(argv=None):
         if args.command == "doctor":
             print(json.dumps(write_doctor_report(inspect_repo(args.repo), args.output), ensure_ascii=False, indent=2))
             return 0
+        if args.command == "workflow":
+            folder = args.output.resolve() / (time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8])
+            result = run_workflow(args.requirement, args.repo, folder, args.github_repo, args.pr,
+                                  args.include_failed_logs)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0 if result["status"] != "BLOCKED" else 2
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:

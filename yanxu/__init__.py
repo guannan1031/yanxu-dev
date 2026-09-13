@@ -1,3 +1,3 @@
-"""Yanxu: a small, read-only PR delivery assistant."""
+"""Yanxu: an evidence-bound AI delivery workflow."""
 
-__version__ = "0.2.0"
+__version__ = "0.8.0"
