@@ -9,8 +9,10 @@ def record(task_id, baseline=20, yanxu=10, same_scope=True, baseline_quality=Tru
         "task_id": task_id,
         "task_type": "bugfix",
         "same_scope": same_scope,
-        "baseline": {"human_minutes": baseline, "quality_passed": baseline_quality, "rework_count": 1},
-        "yanxu": {"human_minutes": yanxu, "quality_passed": yanxu_quality, "rework_count": 0},
+        "baseline": {"human_minutes": baseline, "quality_passed": baseline_quality, "rework_count": 1,
+                     "evidence": f"evidence/{task_id}-baseline.json"},
+        "yanxu": {"human_minutes": yanxu, "quality_passed": yanxu_quality, "rework_count": 0,
+                  "evidence": f"evidence/{task_id}-yanxu.json"},
     }
 
 
@@ -47,6 +49,10 @@ class BenchmarkTests(unittest.TestCase):
             analyze({"evidence_type": "observed", "scope": "x", "records": [record("a", 0, 1)]})
         with self.assertRaises(ReviewError):
             analyze({"evidence_type": "unknown", "scope": "x", "records": [record("a")]})
+        missing = record("missing")
+        missing["baseline"].pop("evidence")
+        with self.assertRaisesRegex(ReviewError, "evidence"):
+            analyze({"evidence_type": "observed", "scope": "x", "records": [missing]})
 
 
 if __name__ == "__main__":

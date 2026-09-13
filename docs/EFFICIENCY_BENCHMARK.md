@@ -12,6 +12,8 @@
 
 每条任务记录基线与研序两边的人工分钟、质量是否通过、返工次数，并明确 `same_scope`。只有范围一致且两边质量都通过的记录进入时间计算。
 
+真实观察还必须给基线和研序两侧提供非空 `evidence` 引用，例如任务记录、commit、PR、运行报告或人工计时凭据。推荐使用 [`record`](MEASUREMENT_RECORDING.md) 逐侧写入，避免手工编辑 JSON 和意外覆盖。
+
 ```bash
 python -m yanxu benchmark docs/benchmark-synthetic-example.json \
   --output runs/benchmark
