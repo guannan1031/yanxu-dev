@@ -12,6 +12,7 @@ from .core import ReviewError, assess, binding, capture, compare, now
 from .report import render
 from .patches import prepare
 from .test_runner import run_tests
+from .task import build_contract, render_contract
 
 
 def write_json(path: Path, value):
@@ -44,6 +45,10 @@ def main(argv=None):
     run.add_argument("--replay", action="store_true", help="Historical demonstration only; skip live GitHub verification")
     run.add_argument("--command", dest="test_command", nargs=argparse.REMAINDER, required=True,
                      help="Executable and arguments after --command; shell syntax is rejected")
+    task = sub.add_parser("task", help="Create a local requirement and acceptance contract from project context")
+    task.add_argument("requirement")
+    task.add_argument("--repo", type=Path, default=Path("."))
+    task.add_argument("--output", type=Path, default=Path("runs/tasks"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -57,6 +62,16 @@ def main(argv=None):
                                replay=args.replay, timeout=args.timeout)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "COMPLETED" else 2
+        if args.command == "task":
+            contract = build_contract(args.requirement, args.repo)
+            folder = args.output.resolve()
+            folder.mkdir(parents=True, exist_ok=True)
+            write_json(folder / "task.json", contract)
+            (folder / "task.md").write_text(render_contract(contract), encoding="utf-8")
+            print(json.dumps({"contract": str(folder / "task.json"), "markdown": str(folder / "task.md"),
+                              "context_files": len(contract["context_files"]),
+                              "test_commands": len(contract["suggested_test_commands"])}, ensure_ascii=False, indent=2))
+            return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:
