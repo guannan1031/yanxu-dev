@@ -1,11 +1,13 @@
 import hashlib
+import io
 import json
 import os
 import unittest
 import uuid
+import zipfile
 
 from yanxu.service import (AuthenticationError, AuthorizationError, NotFoundError, PostgresStore,
-                           ValidationError, normalize_snapshot, token_hash)
+                           ValidationError, normalize_snapshot, parse_cost_amount, token_hash)
 
 
 def sample_snapshot(name="Platform Team"):
@@ -71,6 +73,14 @@ class ServiceContractTests(unittest.TestCase):
             else:
                 os.environ["YANXU_SECURE_COOKIES"] = previous
 
+    def test_cost_amount_parser_is_exact_and_bounded(self):
+        self.assertEqual(parse_cost_amount("12.5"), 12_500_000)
+        self.assertEqual(parse_cost_amount("0.000001"), 1)
+        with self.assertRaises(ValidationError):
+            parse_cost_amount("1.0000001")
+        with self.assertRaises(ValidationError):
+            parse_cost_amount(12.5)
+
 
 @unittest.skipUnless(os.environ.get("YANXU_TEST_DATABASE_URL"),
                      "YANXU_TEST_DATABASE_URL is required for PostgreSQL integration tests")
@@ -109,6 +119,16 @@ class PostgresServiceTests(unittest.TestCase):
         self.assertEqual(len(self.store.list_workspaces(viewer)), 1)
         with self.assertRaises(AuthorizationError):
             self.store.create_workspace(viewer, "Forbidden")
+
+        model_cost = self.store.create_cost_record(self.owner, "model", 12_500_000,
+                                                   "CNY", "invoice-2026-09")
+        self.store.create_cost_record(self.owner, "ci", 2_000_000, "CNY", "ci-billing-09")
+        self.store.create_cost_record(self.owner, "model", 1_000_000, "USD", "model-billing-09")
+        self.assertEqual(model_cost["amount"], "12.5")
+        self.assertEqual(len(self.store.summarize_costs(self.owner)), 3)
+        self.assertEqual(self.store.list_cost_records(self.other), [])
+        with self.assertRaises(AuthorizationError):
+            self.store.create_cost_record(viewer, "model", 1, "CNY", "forbidden")
 
         web_session = self.store.create_web_session(issued["token"])
         self.assertEqual(self.store.authenticate_web_session(web_session["session"]).role, "viewer")
@@ -185,6 +205,7 @@ class PostgresServiceTests(unittest.TestCase):
             dashboard = client.get("/app")
             self.assertEqual(dashboard.status_code, 200, dashboard.text)
             self.assertIn("default-src 'none'", dashboard.headers["content-security-policy"])
+            self.assertIn("connect-src 'self'", dashboard.headers["content-security-policy"])
             self.assertIn("Pilot Dashboard", dashboard.text)
             self.assertIn("example/orders-service", dashboard.text)
             self.assertNotIn("must never be persisted", dashboard.text)
@@ -199,12 +220,54 @@ class PostgresServiceTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(canonical).hexdigest(), fingerprint)
             self.assertEqual(exported.headers["x-yanxu-evidence-fingerprint"], fingerprint)
 
+            recorded = client.post("/v1/costs", json={
+                "category": "model", "amount": "12.50", "currency": "CNY",
+                "evidence_ref": "pilot-invoice-001",
+            })
+            self.assertEqual(recorded.status_code, 201, recorded.text)
+            self.assertEqual(recorded.headers["cache-control"], "no-store")
+            self.assertEqual(recorded.json()["amount_micros"], 12_500_000)
+            self.assertEqual(client.post("/v1/costs", json={
+                "category": "model", "amount": "12.1234567", "currency": "CNY",
+                "evidence_ref": "invalid",
+            }).status_code, 422)
+            dashboard = client.get("/app")
+            self.assertIn("pilot-invoice-001", dashboard.text)
+            self.assertIn("CNY 12.5", dashboard.text)
+
+            bundle = client.get("/v1/pilot/export")
+            self.assertEqual(bundle.status_code, 200, repr(bundle.content[:200]))
+            with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
+                self.assertEqual(set(archive.namelist()),
+                                 {"audit.json", "costs.json", "manifest.json", "summary.json"})
+                manifest = json.loads(archive.read("manifest.json"))
+                for item in manifest["files"]:
+                    self.assertEqual(hashlib.sha256(archive.read(item["path"])).hexdigest(),
+                                     item["sha256"])
+                bundle_fingerprint = manifest.pop("fingerprint")
+                manifest_canonical = json.dumps(manifest, ensure_ascii=False, sort_keys=True,
+                                                separators=(",", ":")).encode("utf-8")
+                self.assertEqual(hashlib.sha256(manifest_canonical).hexdigest(), bundle_fingerprint)
+                self.assertEqual(manifest["efficiency_claim_status"], "NOT_MEASURED")
+            self.assertEqual(bundle.headers["x-yanxu-evidence-fingerprint"], bundle_fingerprint)
+
             logout = client.post("/logout", follow_redirects=False)
             self.assertEqual(logout.status_code, 303)
             self.assertEqual(client.get("/app", follow_redirects=False).status_code, 303)
+            viewer_token = self.store.issue_token(self.owner, "pilot-viewer", "viewer")["token"]
+            self.assertEqual(client.post("/v1/session", json={"token": viewer_token}).status_code, 200)
+            viewer_costs = client.get("/v1/costs")
+            self.assertEqual(viewer_costs.headers["cache-control"], "no-store")
+            self.assertEqual(viewer_costs.json()["items"][0]["evidence_ref"], "pilot-invoice-001")
+            self.assertEqual(client.post("/v1/costs", json={
+                "category": "ci", "amount": "1", "currency": "CNY",
+                "evidence_ref": "viewer-must-not-write",
+            }).status_code, 403)
+            client.post("/logout", follow_redirects=False)
             other_login = client.post("/v1/session", json={"token": self.other_token})
             self.assertEqual(other_login.status_code, 200)
             other_dashboard = client.get("/app")
             self.assertNotIn("Pilot Dashboard", other_dashboard.text)
+            self.assertNotIn("pilot-invoice-001", other_dashboard.text)
             self.assertEqual(client.get("/v1/audit/export").json()["organization_slug"],
                              self.other.organization_slug)

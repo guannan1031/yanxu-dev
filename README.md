@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.17.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器登录私有工作台，查看接入进度、跨项目交付状态和审计证据。
+v0.17.1 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器登录私有工作台，查看接入进度、跨项目交付状态、实际成本和审计证据，并导出可核验的试点 ZIP。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -41,6 +41,8 @@ v0.16 新增：[`serve` 私有团队服务](docs/PRIVATE_SERVICE.md)。FastAPI +
 v0.16.1 新增：[GitHub App/Webhook 接入](docs/GITHUB_APP.md)。验证 `X-Hub-Signature-256`，按 installation 绑定组织，以 delivery id 去重；独立 Worker 处理事件，installation suspend/deleted 后立即停止接受后续事件。
 
 v0.17 新增：[私有团队工作台](docs/PILOT_DASHBOARD.md)。组织 Token 只用于换取短期 HttpOnly 会话；浏览器页面集中展示接入进度、工作空间、标准化 PR/CI、Webhook 队列和最近审计，并可导出带 SHA-256 指纹的组织级 JSON 证据。
+
+v0.17.1 新增：[实际成本与试点证据包](docs/PILOT_COSTS.md)。owner 可按账单或工时记录模型、CI、基础设施和支持成本；金额使用整数微单位精确保存，按币种分别汇总。试点 ZIP 包含摘要、成本、审计和带文件哈希的 manifest，并明确标记提效结论尚未测量。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -162,6 +164,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 私有团队工作空间 Alpha | 显式登记的多个项目运行目录与可选测量文件 | 跨项目静态看板；项目不可用状态可见；不读取源码、不上传、不聚合不同范围的效率百分比 |
 | 私有团队服务 Alpha | 标准化快照、组织令牌、签名 GitHub Webhook、PostgreSQL | 组织隔离、owner/viewer、幂等快照/delivery、撤权、Worker 与审计；Docker Compose 重启后数据可恢复 |
 | 私有团队工作台 | 组织 Token 换取短期 HttpOnly 会话；读取本组织服务状态 | 接入进度、工作空间、PR/CI、Webhook 与审计网页；组织级审计 JSON 带可复算指纹 |
+| 成本与试点验收包 | owner 录入账单或工时金额、币种和证据引用 | 按币种/类型汇总实际成本；ZIP 含摘要、成本、审计和 manifest 哈希，未测量提效时明确标记 `NOT_MEASURED` |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 

@@ -1,6 +1,6 @@
 # 私有团队服务 Alpha
 
-Yanxu Dev v0.17 把本地 `team sync-github` 生成的标准化交付证据和已验证 GitHub Webhook 事件保存到客户自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态和审计记录。
+Yanxu Dev v0.17.1 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件和客户录入的实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、成本和审计记录。
 
 ## 当前闭环
 
@@ -15,6 +15,7 @@ flowchart LR
     F --> H[组织鉴权与审计]
     G --> I[工作空间状态 API]
     G --> J[组织隔离团队网页]
+    G --> K[实际成本与试点 ZIP]
 ```
 
 | 项目 | 设计与验收 |
@@ -22,9 +23,9 @@ flowchart LR
 | 输入 | v0.15 `team-github.json` 标准化快照 |
 | 处理 | 验证组织、工作空间和字段白名单；按内容指纹幂等入库 |
 | 工具 | FastAPI、Psycopg、PostgreSQL、Docker Compose |
-| 输出 | 工作空间列表、最新快照、令牌清单、审计 API 与团队工作台 |
+| 输出 | 工作空间列表、最新快照、令牌清单、成本/审计 API、团队工作台与试点 ZIP |
 | 权限 | `owner` 可写和管理令牌；`viewer` 只能读取本组织数据 |
-| 数据边界 | 不保存源码、diff、PR 正文、日志或明文令牌；服务仍不评论、审批、merge 或部署 |
+| 数据边界 | 不保存源码、diff、PR 正文、日志或明文令牌；成本证据只保存脱敏引用；服务仍不评论、审批、merge 或部署 |
 | 效率指标 | 减少负责人手工汇总 PR/CI 与交付证据的分钟数；真实百分比只用质量通过的配对任务计算 |
 | 验收 | PostgreSQL 重启后快照恢复；跨组织读取返回 404/空集合；重复快照不重复审计；撤销令牌后不能鉴权 |
 
@@ -82,6 +83,8 @@ PowerShell 使用 `$env:YANXU_API_TOKEN` 保存当前会话的令牌。`publish-
 | GET | `/login`、`/app` | 浏览器会话 | 登录和查看本组织团队工作台 |
 | POST | `/v1/session`、`/logout` | Token / 浏览器会话 | 创建短期 HttpOnly 会话或立即撤销 |
 | GET | `/v1/audit/export` | 浏览器会话 | 下载本组织带指纹审计 JSON |
+| GET/POST | `/v1/costs` | 读：浏览器会话；写：owner | 查询或记录本组织实际成本 |
+| GET | `/v1/pilot/export` | 浏览器会话 | 下载本组织摘要、成本、审计和 manifest ZIP |
 | GET | `/v1/me` | owner/viewer | 核对当前组织和角色 |
 | POST | `/v1/tokens` | owner | 创建一次性显示的新令牌 |
 | GET | `/v1/tokens` | owner | 查看令牌元数据，不返回哈希或明文 |
@@ -116,4 +119,4 @@ docker compose start app worker
 
 这一版把“个人 CLI 演示”推进为可安装、可浏览的私有团队服务：客户数据留在自己的 PostgreSQL，负责人可以分发只读账号，交付证据跨重启保留，并能核对谁创建了工作空间、发布了快照或管理了令牌。可收费内容是私有安装、团队 Policy 配置、仓库接入、验收和维护支持。
 
-当前还没有外部付费客户或足够的真实配对任务，因此不能声称已经产生收入或固定提效比例。GitHub 事件能力的配置与边界见 [GitHub App 接入](GITHUB_APP.md)；下一步是用量成本记录、升级故障手册和四周真实团队试点验收。
+当前还没有外部付费客户或足够的真实配对任务，因此不能声称已经产生收入或固定提效比例。GitHub 事件能力的配置与边界见 [GitHub App 接入](GITHUB_APP.md)，成本与离线验收合同见[实际成本与试点证据包](PILOT_COSTS.md)；下一步是升级故障手册和四周真实团队试点验收。

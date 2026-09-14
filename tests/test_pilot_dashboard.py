@@ -16,13 +16,15 @@ class PilotDashboardContractTests(unittest.TestCase):
             "organization_slug": "team",
             "role": "viewer",
             "stats": {"workspaces": 0, "snapshots": 0, "projects": 1,
-                      "ci_passing": 0, "pending_events": 0},
+                      "ci_passing": 0, "pending_events": 0, "cost_records": 0},
             "onboarding": [],
             "workspaces": [],
             "projects": [{"workspace": "demo", "repo": "<script>alert(1)</script>",
                           "pr": 1, "ci": "PENDING", "assessment": "MANUAL_REVIEW"}],
             "deliveries": [],
             "audit": [],
+            "costs": [],
+            "cost_summary": [],
             "data_boundary": "safe",
         })
         self.assertNotIn("<script>alert(1)</script>", page)

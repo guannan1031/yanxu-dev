@@ -72,6 +72,17 @@ CREATE TABLE IF NOT EXISTS web_sessions (
     revoked_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS web_sessions_org_idx ON web_sessions(organization_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS cost_records (
+    id uuid PRIMARY KEY,
+    organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    actor_token_id uuid REFERENCES api_tokens(id) ON DELETE SET NULL,
+    category varchar(24) NOT NULL CHECK (category IN ('model', 'ci', 'infrastructure', 'support', 'custom')),
+    amount_micros bigint NOT NULL CHECK (amount_micros >= 0),
+    currency char(3) NOT NULL,
+    evidence_ref varchar(500) NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS cost_records_org_idx ON cost_records(organization_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS workspaces (
     id uuid PRIMARY KEY,
     organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -144,6 +155,21 @@ def validate_uuid(value: Any, label: str) -> str:
         return str(uuid.UUID(str(value)))
     except (TypeError, ValueError, AttributeError) as exc:
         raise ValidationError(f"{label} must be a UUID") from exc
+
+
+def parse_cost_amount(value: Any) -> int:
+    if not isinstance(value, str) or not re.fullmatch(r"\d{1,12}(?:\.\d{1,6})?", value):
+        raise ValidationError("Cost amount must be a non-negative decimal with up to 6 places")
+    whole, _, fraction = value.partition(".")
+    amount_micros = int(whole) * 1_000_000 + int(fraction.ljust(6, "0") or "0")
+    if amount_micros > 9_000_000_000_000_000_000:
+        raise ValidationError("Cost amount is too large")
+    return amount_micros
+
+
+def format_cost_amount(amount_micros: int) -> str:
+    whole, fraction = divmod(amount_micros, 1_000_000)
+    return f"{whole}.{fraction:06d}".rstrip("0").rstrip(".")
 
 
 def normalize_snapshot(payload: Any, workspace_name: str) -> dict:
@@ -342,6 +368,53 @@ class PostgresStore:
             ).fetchone()
             self._audit(connection, principal, "session.revoked", "web_session", str(row["id"]), {})
 
+    def create_cost_record(self, principal: Principal, category: str, amount_micros: int,
+                           currency: str, evidence_ref: str) -> dict:
+        if principal.role != "owner":
+            raise AuthorizationError("Owner role is required")
+        if category not in {"model", "ci", "infrastructure", "support", "custom"}:
+            raise ValidationError("Cost category is unsupported")
+        if (not isinstance(amount_micros, int) or isinstance(amount_micros, bool)
+                or not 0 <= amount_micros <= 9_000_000_000_000_000_000):
+            raise ValidationError("Cost amount_micros must be a non-negative 64-bit integer")
+        if not isinstance(currency, str) or not re.fullmatch(r"[A-Z]{3}", currency):
+            raise ValidationError("Cost currency must be a three-letter uppercase code")
+        evidence_ref = _text(evidence_ref, "Cost evidence reference", 500)
+        record_id = str(uuid.uuid4())
+        with self._connect() as connection:
+            row = connection.execute(
+                "INSERT INTO cost_records (id, organization_id, actor_token_id, category, amount_micros, "
+                "currency, evidence_ref) VALUES (%s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id, category, amount_micros, currency, evidence_ref, created_at",
+                (record_id, principal.organization_id, principal.token_id, category,
+                 amount_micros, currency, evidence_ref),
+            ).fetchone()
+            self._audit(connection, principal, "cost.recorded", "cost_record", record_id,
+                        {"category": category, "amount_micros": amount_micros, "currency": currency})
+        return self._cost_row(row)
+
+    def list_cost_records(self, principal: Principal, limit: int = 100) -> list[dict]:
+        limit = max(1, min(limit, 200))
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, category, amount_micros, currency, evidence_ref, created_at "
+                "FROM cost_records WHERE organization_id = %s ORDER BY created_at DESC LIMIT %s",
+                (principal.organization_id, limit),
+            ).fetchall()
+        return [self._cost_row(row) for row in rows]
+
+    def summarize_costs(self, principal: Principal) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT currency, category, sum(amount_micros) AS amount_micros, count(*) AS records "
+                "FROM cost_records WHERE organization_id = %s GROUP BY currency, category "
+                "ORDER BY currency, category",
+                (principal.organization_id,),
+            ).fetchall()
+        return [{"currency": row["currency"], "category": row["category"],
+                 "amount_micros": int(row["amount_micros"]), "records": int(row["records"])}
+                for row in rows]
+
     def issue_token(self, principal: Principal, label: str, role: str) -> dict:
         if principal.role != "owner":
             raise AuthorizationError("Owner role is required")
@@ -508,3 +581,10 @@ class PostgresStore:
     def _snapshot_row(row: dict, created: bool) -> dict:
         return {"id": str(row["id"]), "fingerprint": row["fingerprint"], "payload": row["payload"],
                 "created_at": row["created_at"].isoformat(), "created": created}
+
+    @staticmethod
+    def _cost_row(row: dict) -> dict:
+        return {"id": str(row["id"]), "category": row["category"],
+                "amount_micros": int(row["amount_micros"]), "currency": row["currency"],
+                "amount": format_cost_amount(int(row["amount_micros"])),
+                "evidence_ref": row["evidence_ref"], "created_at": row["created_at"].isoformat()}
