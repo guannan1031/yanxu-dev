@@ -109,7 +109,7 @@ def prepare(evidence: dict, checkout: Path, allow_paths: list[str], output: Path
         for name, content in originals.items():
             dest = workspace / name
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(content, encoding="utf-8")
+            dest.write_bytes(content.encode("utf-8"))
             if name in executable:
                 dest.chmod(0o755)
         # This fresh index has no inherited remotes, hooks, credentials or checkout filters.
