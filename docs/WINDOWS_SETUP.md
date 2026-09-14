@@ -1,6 +1,6 @@
 # Windows 安装与迁移指南
 
-这份指南用于把 Yanxu Dev v0.18+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
+这份指南用于把 Yanxu Dev v0.19+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
 
 ## 选择 Windows 原生模式
 
@@ -95,14 +95,14 @@ git pull --ff-only
 先安装 Docker Desktop，保持 Linux containers 模式。核心 CLI 不需要 Docker；只有团队需要持久化 API 时才执行：
 
 ```powershell
-Copy-Item .env.example .env
-# 编辑 .env，替换数据库密码与引导令牌；.env 已被 Git 忽略
+python -m yanxu pilot init --org-slug example-team --org-name "Example Team"
+python -m yanxu pilot doctor --output runs\pilot-doctor.json
 docker compose up -d --build
 docker compose ps
 Invoke-RestMethod http://127.0.0.1:8080/healthz
 ```
 
-API、PowerShell 令牌用法和跨平台备份恢复见 [私有团队服务说明](PRIVATE_SERVICE.md)。不要从旧电脑复制 GitHub/Codex 登录缓存；私有服务数据库迁移应使用该文档的 PostgreSQL 备份文件。
+初始化和脱敏预检见[私有试点初始化](PILOT_ONBOARDING.md)，API、PowerShell 令牌用法和跨平台备份恢复见[私有团队服务说明](PRIVATE_SERVICE.md)。不要从旧电脑复制 GitHub/Codex 登录缓存；私有服务数据库迁移应使用该文档的 PostgreSQL 备份文件。
 
 Windows 原生 PowerShell 可直接运行统一运维命令：
 
@@ -122,6 +122,6 @@ python -m yanxu ops restore backups\before-upgrade.dump --compose-dir . --confir
 - `codex --version` 能运行。
 - `python -m yanxu doctor ...` 生成 Windows 本地报告。
 - GitHub Actions 的 Linux 和 Windows 检查通过。
-- 如果启用私有服务，`/healthz` 返回数据库可用，`ops backup` 生成 dump 和 manifest，恢复后仍能读取备份时点的同一快照与成本。
+- 如果启用私有服务，`pilot doctor` 全部通过，`/healthz` 返回数据库可用，`ops backup` 生成 dump 和 manifest，恢复后仍能读取备份时点的同一快照与成本。
 
 达到以上条件后，可以继续录演示和开发。真实提效百分比仍要通过至少 5 个同范围、两侧质量均通过的配对任务测量，换机本身不会改变这个证据口径。
