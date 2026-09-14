@@ -19,6 +19,7 @@ from .doctor import inspect_repo, write_report as write_doctor_report
 from .workflow import run_workflow
 from .draft_pr import publish_draft_pr
 from .implement import run_implementation
+from .board import build_board, render_html as render_board_html
 
 
 def write_json(path: Path, value):
@@ -104,6 +105,10 @@ def main(argv=None):
     implement.add_argument("--ai-timeout", type=int, default=240, help="Model timeout in seconds")
     implement.add_argument("--command", dest="test_command", nargs=argparse.REMAINDER, required=True,
                            help="Explicit test executable and arguments; shell syntax is rejected")
+    board = sub.add_parser("board", help="Generate a static local team board from Yanxu run artifacts")
+    board.add_argument("--runs", type=Path, required=True, help="Explicit local directory containing Yanxu artifacts")
+    board.add_argument("--measurements", type=Path, help="Optional observed measurement JSON created by record")
+    board.add_argument("--output", type=Path, default=Path("runs/board.html"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -169,6 +174,16 @@ def main(argv=None):
                               "original_checkout_modified": result["original_checkout_modified"],
                               "remote_modified": result["remote_modified"]}, ensure_ascii=False, indent=2))
             return 0 if result["status"] == "READY_FOR_HUMAN_REVIEW" else 2
+        if args.command == "board":
+            board_result = build_board(args.runs, args.measurements)
+            output = args.output.resolve()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            write_json(output.with_suffix(".json"), board_result)
+            output.write_text(render_board_html(board_result), encoding="utf-8")
+            print(json.dumps({"board": str(output), "data": str(output.with_suffix(".json")),
+                              "recorded_runs": board_result["summary"]["recorded_runs"],
+                              "remote_modified": False}, ensure_ascii=False, indent=2))
+            return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:
