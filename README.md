@@ -48,7 +48,7 @@ v0.18 新增：[备份、恢复与升级手册](docs/UPGRADE_AND_RECOVERY.md)。
 
 v0.19 新增：[私有试点初始化与预检](docs/PILOT_ONBOARDING.md)。`pilot init` 生成不回显的随机数据库密码、组织 Token 和 Webhook secret，并拒绝覆盖已有 `.env`；`pilot doctor` 脱敏检查必填项、占位符、长度、端口、Docker 与 Compose 配置。[v0.19.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.19.0) 附带脱敏冷启动验证 JSON。
 
-v0.20 新增：[试点验收与支持证据](docs/PILOT_ACCEPTANCE.md)。owner 配置验收标准、记录 PASS/FAIL 证据与客户确认，并登记支持分钟；viewer 只读。导出的试点 ZIP 新增 `acceptance.json` 和 `support.json`，仍明确区分内部通过、客户确认记录和未测量提效。
+v0.20 新增：[试点验收与支持证据](docs/PILOT_ACCEPTANCE.md)。owner 配置验收标准、记录 PASS/FAIL 证据与客户确认，并登记支持分钟；viewer 只读。导出的试点 ZIP 新增 `acceptance.json` 和 `support.json`，仍明确区分内部通过、客户确认记录和未测量提效。[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) 提供跨平台 wheel、真实 Chromium 截图和脱敏验证 JSON。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 

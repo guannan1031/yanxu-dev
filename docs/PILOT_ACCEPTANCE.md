@@ -6,6 +6,8 @@ Yanxu Dev v0.20.0 面向 5–50 人研发团队的试点负责人、技术负责
 
 截图使用本地合成组织和演示证据引用，不代表真实客户验收。
 
+公开证据：[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312749) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312232)。Release 验证 JSON SHA-256 为 `73e1ef1fbf58d586a30a202ae9790e77dd0fe7edc1c886b506e751f49d521a43`，跨平台 wheel 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`，截图为 `3762e9ac701f8b37b153d8cf5e8e87cd798e99025814c751b9970c5b7b789774`。
+
 ## 核心场景
 
 owner 在试点开始时配置可核验的验收标准，例如“3 个目标仓库能够显示与 commit 绑定的 PR/CI 证据”。执行后将单项标为 `PASS`、`FAIL` 或 `PENDING`；`PASS` 和 `FAIL` 必须填写工单、会议纪要或验收文档引用。只有 `PASS` 可以记录“客户确认”。
