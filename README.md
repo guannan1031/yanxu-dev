@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.9 是可运行的命令行工具：一条 `workflow` 命令先体检仓库并建立需求任务合同，PR 创建后采集并复核 GitHub 证据；`draft-pr` 在精确范围检查和显式确认后推送功能分支、创建 Draft PR。也可分别诊断失败、验证修复并测量人工时间和质量。
+v0.10 是可运行的命令行工具：`implement` 根据任务合同和显式源码白名单生成受控补丁，在不可变 HEAD 归档中自动测试，并交给人工审查；`workflow` 串联项目体检、需求合同和 PR 证据，`draft-pr` 在精确范围检查和显式确认后推送功能分支、创建 Draft PR。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -23,6 +23,10 @@ v0.7 新增：[`doctor` AI Coding 项目体检](docs/REPOSITORY_DOCTOR.md)。它
 v0.8 新增：[`workflow` 一键研发交付工作流](docs/DELIVERY_WORKFLOW.md)。开发前串联项目体检与任务合同，PR 创建后继续完成 PR/CI 事实采集和同次执行内的证据复核；阻断即停止，始终不授权自动合并。
 
 v0.9 新增：[`draft-pr` 受控 Draft PR 发布器](docs/DRAFT_PR_PUBLISHER.md)。默认只生成发布计划；工作区、远端、base、提交和精确文件范围通过后，只有 `--confirm-create` 才允许无强推地发布当前分支并创建 Draft PR。
+
+v0.10 新增：[`implement` 受控代码生成与自动测试](docs/CONTROLLED_IMPLEMENTATION.md)。模型只接收任务合同与显式允许的源码，在隔离的 HEAD 归档中应用补丁、执行开发者指定的测试；原工作区和 GitHub 保持不变。
+
+[v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
 ## 快速开始
 
@@ -79,6 +83,11 @@ python -m yanxu doctor --repo . --output runs/doctor
 # 一键完成开发前工作流；创建 PR 后补充 --github-repo owner/repo --pr 12
 python -m yanxu workflow "Add a safe pagination endpoint" --repo . --output runs/workflow
 
+# 用任务合同生成受控源码补丁，并在隔离副本中运行指定测试
+python -m yanxu implement runs/tasks/task.json --checkout . \
+  --allow-path sample/pagination.py --output runs/implement \
+  --command python -m unittest discover -s tests -v
+
 # 先 dry-run；人工确认计划后，在相同命令增加 --confirm-create
 python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head feat/example \
   --allow-path yanxu/example.py --allow-path tests/test_example.py \
@@ -104,7 +113,8 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | AI Coding 项目体检 | 项目规则、README、构建/测试/CI 和密钥边界 | `READY` 或 `NEEDS_WORK`、整改清单、JSON/Markdown/HTML；业务源码扫描数为 0 |
 | 一键研发交付工作流 | 需求、本地仓库、可选 GitHub repo/PR | 串联体检、任务合同、PR/CI 采集和证据复核；阻断短路，输出统一执行轨迹 |
 | 受控 Draft PR 发布 | 已提交功能分支、GitHub 目标、base/head、正文和精确文件白名单 | 默认只输出计划；显式确认后推送分支并创建 Draft PR，保留部分失败状态 |
-| 本项目 CI | `pull_request` 和 `push` 到 main | Python 3.11/3.13 的独立契约与回归测试 |
+| 受控代码生成 | 任务合同、1–10 个已有源码白名单、显式测试命令 | AI 标准 diff、隔离 HEAD 归档、测试日志、JSON/HTML 报告；原工作区和远端不变 |
+| 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
 
@@ -124,7 +134,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现项目体检、任务工作流、上下文合同、版本绑定、规则检查、结构化报告、过期核验、受限补丁准备、隔离测试验证、受控 Draft PR 发布与配对提效评测；编码/模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动生成修复、自动合并或生产部署，不应在简历中写成已完成。
+我们实现项目体检、任务工作流、上下文合同、受控代码生成、版本绑定、规则检查、结构化报告、过期核验、隔离测试验证、受控 Draft PR 发布与配对提效评测；模型能力复用成熟执行器。尚未实现 LangGraph、多 Agent、向量 RAG、PostgreSQL、自动合并或生产部署，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 
@@ -140,9 +150,9 @@ flowchart LR
 
 ## 数据和权限
 
-- 只调用 GitHub 读取接口，不使用提交、评论、审查、merge 或部署 API。
-- 默认不调用模型；`--ai` 才将该 PR 的标题、正文、代码差异、检查/审批信息，以及选择加入的失败日志交给使用者配置的 Codex 服务。
-- 模型使用临时目录、只读沙箱，关闭 shell、子 Agent、应用工具和网页搜索；不继承 GitHub/cloud 凭据或用户 MCP 配置。建议补丁仅作文字展示。
+- PR 审查默认只调用 GitHub 读取接口；`draft-pr --confirm-create` 是唯一已实现的远端写入入口，只推送当前功能分支并创建 Draft PR，不评论、审批、merge 或部署。
+- 默认不调用模型；`review --ai` 才发送受限 PR 快照，`implement` 才发送任务合同和显式允许的源码文件给使用者配置的 Codex 服务。
+- 模型使用临时目录、只读沙箱，关闭 shell、子 Agent、应用工具和网页搜索；除 Codex/OpenAI 自身登录所需环境外，不继承 GitHub 凭据或用户 MCP 配置。`implement` 的建议补丁只应用于隔离的 HEAD 归档并运行开发者明确指定的测试。
 - 采集结果有长度上限，缺失/截断明确标识。私有仓库报告仍属于私有材料；正则脱敏只是辅助，不保证识别所有秘密。
 - 不需要把 API Key、Token 或客户代码放入本项目；登录由相应 CLI 管理。报告分享前应检查内容。
 
