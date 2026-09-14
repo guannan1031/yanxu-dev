@@ -9,3 +9,5 @@ runs/
 .env.*
 !.env.example
 .DS_Store
+.playwright-cli/
+output/playwright/
