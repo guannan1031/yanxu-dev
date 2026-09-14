@@ -28,3 +28,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Independent contract and regression tests
         run: python -m unittest discover -s tests -v
+      - name: Windows handoff self-check
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\windows-check.ps1 -SkipTests

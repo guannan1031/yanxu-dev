@@ -32,6 +32,12 @@ v0.10 新增：[`implement` 受控代码生成与自动测试](docs/CONTROLLED_I
 
 需要 Python 3.11+、[GitHub CLI](https://cli.github.com/)；AI 模式额外需要已登录的 [Codex CLI](https://github.com/openai/codex)。本次兼容性以 Codex CLI 0.137.0 为准。
 
+Windows 用户可以直接使用原生 PowerShell，不需要先安装 WSL。按照 [Windows 安装与迁移指南](docs/WINDOWS_SETUP.md) 完成安装后，运行一键自检：
+
+```powershell
+.\scripts\windows-check.ps1 -RequireAuthTools
+```
+
 ```bash
 git clone https://github.com/guannan1031/yanxu-dev.git
 cd yanxu-dev
@@ -115,6 +121,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 受控 Draft PR 发布 | 已提交功能分支、GitHub 目标、base/head、正文和精确文件白名单 | 默认只输出计划；显式确认后推送分支并创建 Draft PR，保留部分失败状态 |
 | 受控代码生成 | 任务合同、1–10 个已有源码白名单、显式测试命令 | AI 标准 diff、隔离 HEAD 归档、测试日志、JSON/HTML 报告；原工作区和远端不变 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
+| Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 
 `UNCHANGED` 仅表示重新采集时一致，不保证下一刻仍一致。指纹用于版本对账，不是防恶意篡改的数字签名。CODEOWNERS、所有 required checks 和仓库规则尚未完整计算，GitHub 自身规则和人工审查仍然必要。
 
