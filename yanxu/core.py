@@ -95,8 +95,8 @@ def capture(repo: str, number: int, gh: GitHub | None = None, include_logs: bool
     sha = pr["head_sha"]
     raw_files = gh.api(f"{root}/pulls/{number}/files?per_page=100", pages=True)
     # GitHub omits patches for binary/very large files. Never treat that as reviewed.
-    files = [{"path": x["filename"], "status": x["status"], "patch": redact(x.get("patch", ""))[:12000],
-              "patch_complete": bool(x.get("patch")) and len(x.get("patch", "")) <= 12000,
+    files = [{"path": x["filename"], "status": x["status"], "patch": redact(x.get("patch", ""))[:20000],
+              "patch_complete": bool(x.get("patch")) and len(x.get("patch", "")) <= 20000,
               "additions": x.get("additions", 0), "deletions": x.get("deletions", 0)} for x in raw_files[:100]]
     raw_checks = gh.api(f"{root}/commits/{sha}/check-runs?per_page=100&filter=latest")
     checks = sorted([{"id": x["id"], "name": x["name"], "status": x["status"],
