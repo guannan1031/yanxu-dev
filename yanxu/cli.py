@@ -149,8 +149,20 @@ def main(argv=None):
     team_sync = team_sub.add_parser("sync-github", help="Read registered PR/CI facts into a version-bound team snapshot")
     team_sync.add_argument("workspace", type=Path)
     team_sync.add_argument("--output", type=Path, default=Path("runs/team-github"))
+    team_publish = team_sub.add_parser("publish-snapshot", help="Explicitly publish normalized evidence to a private service")
+    team_publish.add_argument("snapshot", type=Path)
+    team_publish.add_argument("--server", required=True)
+    team_publish.add_argument("--workspace-id", required=True)
+    team_publish.add_argument("--token-env", default="YANXU_API_TOKEN")
+    serve = sub.add_parser("serve", help="Run the optional private PostgreSQL team service")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8080)
     args = parser.parse_args(argv)
     try:
+        if args.command == "serve":
+            from .service_api import run_server
+            run_server(args.host, args.port)
+            return 0
         if args.command == "prepare-fix":
             evidence = json.loads(args.evidence.read_text(encoding="utf-8"))
             result = prepare(evidence, args.checkout, args.allow_path, args.output, replay=args.replay)
@@ -234,6 +246,11 @@ def main(argv=None):
                               "remote_modified": False}, ensure_ascii=False, indent=2))
             return 0
         if args.command == "team":
+            if args.team_command == "publish-snapshot":
+                from .service_client import publish_snapshot
+                result = publish_snapshot(args.server, args.workspace_id, args.snapshot, args.token_env)
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+                return 0
             if args.team_command == "init":
                 workspace = create_workspace(args.name)
                 write_workspace(args.output, workspace)

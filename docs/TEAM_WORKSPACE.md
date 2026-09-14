@@ -1,6 +1,6 @@
 # Yanxu Team Workspace Alpha
 
-`team` 是一个文件化、可私有化运行的团队工作空间。负责人只登记已授权项目的 `runs/`、可选测量文件和明确的 GitHub PR。生成看板不会上传数据、创建 PR、merge 或部署。
+`team` 是本地文件化工作空间。负责人只登记已授权项目的 `runs/`、可选测量文件和明确的 GitHub PR。生成看板不会上传数据、创建 PR、merge 或部署。v0.16 可由用户显式执行 `publish-snapshot`，把白名单化后的 GitHub 快照写入自己的[私有团队服务](PRIVATE_SERVICE.md)。
 
 ```bash
 # 1. 初始化一个团队工作空间
@@ -28,6 +28,10 @@ python -m yanxu team board .yanxu/team-workspace.json --output runs/team-board.h
 python -m yanxu team export .yanxu/team-workspace.json \
   --github-snapshot runs/team-github/TIMESTAMP/team-github.json \
   --output runs/yanxu-pilot-evidence.zip
+
+# 可选：明确写入已部署的私有服务；令牌只从环境变量读取
+python -m yanxu team publish-snapshot runs/team-github/TIMESTAMP/team-github.json \
+  --server http://127.0.0.1:8080 --workspace-id WORKSPACE_UUID
 ```
 
 ## 输入、输出与验收
@@ -48,4 +52,4 @@ python -m yanxu team export .yanxu/team-workspace.json \
 
 ## 商业定位
 
-这是“私有团队版 Alpha”，适合单个客户在自己的开发环境内完成多个仓库的接入验证。付费试点可包含规则包配置、CI/PR 流程接入、交付看板和维护服务。正式团队账号、RBAC、GitHub/GitLab OAuth、Webhook、远程 Runner、多租户隔离和托管计费尚未实现，后续应在真实试点证明需求后建设。
+这是“私有团队版 Alpha”，适合单个客户在自己的开发环境内完成多个仓库的接入验证。v0.16 已提供组织令牌、owner/viewer、PostgreSQL 和 Docker 私有部署；正式用户目录、GitHub/GitLab OAuth、Webhook、远程 Runner、多租户托管隔离和计费尚未实现。

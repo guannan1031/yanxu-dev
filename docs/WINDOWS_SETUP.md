@@ -1,6 +1,6 @@
 # Windows 安装与迁移指南
 
-这份指南用于把 Yanxu Dev v0.10+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成和 Draft PR 工作流。
+这份指南用于把 Yanxu Dev v0.16+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
 
 ## 选择 Windows 原生模式
 
@@ -90,6 +90,20 @@ git pull --ff-only
 .\scripts\windows-check.ps1
 ```
 
+## 7. 可选私有团队服务
+
+先安装 Docker Desktop，保持 Linux containers 模式。核心 CLI 不需要 Docker；只有团队需要持久化 API 时才执行：
+
+```powershell
+Copy-Item .env.example .env
+# 编辑 .env，替换数据库密码与引导令牌；.env 已被 Git 忽略
+docker compose up -d --build
+docker compose ps
+Invoke-RestMethod http://127.0.0.1:8080/healthz
+```
+
+API、PowerShell 令牌用法和跨平台备份恢复见 [私有团队服务说明](PRIVATE_SERVICE.md)。不要从旧电脑复制 GitHub/Codex 登录缓存；私有服务数据库迁移应使用该文档的 PostgreSQL 备份文件。
+
 ## 换机验收清单
 
 - `git status --short --branch` 显示在 `main`，没有意外改动。
@@ -99,5 +113,6 @@ git pull --ff-only
 - `codex --version` 能运行。
 - `python -m yanxu doctor ...` 生成 Windows 本地报告。
 - GitHub Actions 的 Linux 和 Windows 检查通过。
+- 如果启用私有服务，`/healthz` 返回数据库可用，备份恢复后仍能读取同一快照。
 
 达到以上条件后，可以继续录演示和开发。真实提效百分比仍要通过至少 5 个同范围、两侧质量均通过的配对任务测量，换机本身不会改变这个证据口径。
