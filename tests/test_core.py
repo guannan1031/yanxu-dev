@@ -70,6 +70,8 @@ class EvidenceTests(unittest.TestCase):
     def test_missing_patch_and_check_overflow_are_incomplete(self):
         del self.gh.files[0]["patch"]
         self.assertFalse(self.snapshot()["complete"])
+        self.gh.files[0]["patch"] = "x" * 20001
+        self.assertFalse(self.snapshot()["complete"])
         self.gh.files[0]["patch"] = "a"
         self.gh.checks["total_count"] = 200
         self.assertFalse(self.snapshot()["complete"])

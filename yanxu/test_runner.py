@@ -64,54 +64,41 @@ def test_command(command: list[str]) -> list[str]:
     if any(x in ("|", "&&", ";", ">", "<", "`", "$", "\n", "\r") for x in command):
         raise ReviewError("Shell syntax is not accepted; pass executable and arguments separately")
     executable = Path(command[0]).name.lower()
-    if not ((executable == "python" or executable.startswith("python3")) or
-            executable in {"pytest", "node", "npm", "go", "mvn", "gradle", "cargo"}):
+    if not ((executable in {"python", "python.exe", "py", "py.exe"} or executable.startswith("python3")) or
+            executable in {"pytest", "pytest.exe", "node", "node.exe", "npm", "npm.cmd",
+                           "go", "go.exe", "mvn", "mvn.cmd", "gradle", "gradle.bat",
+                           "cargo", "cargo.exe"}):
         raise ReviewError("Test executable is outside the supported allowlist")
     return command
 
 
-def run_tests(evidence: dict, checkout: Path, allow_paths: list[str], command: list[str], output: Path,
-              replay: bool = False, timeout: int = 120) -> dict:
-    snapshot = evidence["snapshot"]
-    if binding(snapshot) != snapshot["binding"]:
-        raise ReviewError("Saved evidence fingerprint mismatch")
-    if not snapshot["complete"] or evidence["ai"]["status"] != "completed":
-        raise ReviewError("Complete context and a completed AI diagnosis are required")
+def execute_patch(checkout: Path, sha: str, proposal: str, allow_paths: list[str], command: list[str], output: Path,
+                  timeout: int = 120, metadata: dict | None = None, prefix: str = "test-") -> dict:
     command = test_command(command)
-    proposal = evidence["ai"]["answer"]["suggested_patch"]
     paths = patch_paths(proposal)
     allowed = {safe_path(p) for p in allow_paths}
     if not set(paths).issubset(allowed):
         raise ReviewError("Patch includes a path outside the explicit allowlist")
     if timeout < 1 or timeout > 900:
         raise ReviewError("Test timeout must be between 1 and 900 seconds")
-    sha = snapshot["pr"]["head_sha"]
     checkout = checkout.resolve()
     if git("-C", str(checkout), "cat-file", "-t", sha).strip() != "commit":
         raise ReviewError("Recorded commit is unavailable in this checkout")
-    verification = {"status": "NOT_CHECKED_REPLAY", "auto_merge_allowed": False}
-    if not replay:
-        current = capture(snapshot["repo"], snapshot["pr"]["number"])
-        verification = compare(snapshot, current)
-        if verification["status"] != "UNCHANGED" or current["pr"]["state"] != "open" or current["pr"]["merged"]:
-            raise ReviewError("Evidence is stale or PR is closed; generate a new diagnosis")
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    folder = Path(tempfile.mkdtemp(prefix="test-", dir=output))
+    folder = Path(tempfile.mkdtemp(prefix=prefix, dir=output))
     workspace = folder / "workspace"
     workspace.mkdir()
-    manifest = {"schema_version": 1, "created_at": now(), "status": "PREPARING",
-                "mode": "historical_replay" if replay else "live_evidence", "repo": snapshot["repo"],
-                "pr": snapshot["pr"]["number"], "head_sha": sha, "evidence_binding": snapshot["binding"],
-                "paths": paths, "test_command": command, "timeout_seconds": timeout,
-                "verification": verification, "tests": "NOT_RUN", "remote_modified": False,
-                "original_checkout_modified": False, "auto_merge_allowed": False}
+    manifest = {"schema_version": 1, "created_at": now(), "status": "PREPARING", "head_sha": sha,
+                "paths": paths, "test_command": command, "timeout_seconds": timeout, "tests": "NOT_RUN",
+                "remote_modified": False, "original_checkout_modified": False, "auto_merge_allowed": False,
+                **(metadata or {})}
     try:
         archive_commit(checkout, sha, workspace)
         git("init", "--quiet", "--template=", str(workspace))
         git("-C", str(workspace), "-c", "core.autocrlf=false", "add", "--", ".")
         patch_file = folder / "proposal.diff"
-        patch_file.write_text(proposal, encoding="utf-8")
+        patch_file.write_bytes(proposal.encode("utf-8"))
         git("-C", str(workspace), "apply", "--check", "--", str(patch_file))
         git("-C", str(workspace), "apply", "--", str(patch_file))
         changed = git("-C", str(workspace), "diff", "--name-only").splitlines()
@@ -136,11 +123,17 @@ def run_tests(evidence: dict, checkout: Path, allow_paths: list[str], command: l
             stdout, _ = proc.communicate(timeout=timeout)
             timed_out = False
         except subprocess.TimeoutExpired:
-            os.killpg(proc.pid, signal.SIGTERM)
+            if os.name == "nt":
+                proc.terminate()
+            else:
+                os.killpg(proc.pid, signal.SIGTERM)
             try:
                 stdout, _ = proc.communicate(timeout=5)
             except subprocess.TimeoutExpired:
-                os.killpg(proc.pid, signal.SIGKILL)
+                if os.name == "nt":
+                    proc.kill()
+                else:
+                    os.killpg(proc.pid, signal.SIGKILL)
                 stdout, _ = proc.communicate()
             timed_out = True
         stdout = stdout or ""
@@ -154,3 +147,23 @@ def run_tests(evidence: dict, checkout: Path, allow_paths: list[str], command: l
     finally:
         (folder / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return {**manifest, "folder": str(folder), "workspace": str(workspace), "log": str(folder / "test-output.log")}
+
+
+def run_tests(evidence: dict, checkout: Path, allow_paths: list[str], command: list[str], output: Path,
+              replay: bool = False, timeout: int = 120) -> dict:
+    snapshot = evidence["snapshot"]
+    if binding(snapshot) != snapshot["binding"]:
+        raise ReviewError("Saved evidence fingerprint mismatch")
+    if not snapshot["complete"] or evidence["ai"]["status"] != "completed":
+        raise ReviewError("Complete context and a completed AI diagnosis are required")
+    verification = {"status": "NOT_CHECKED_REPLAY", "auto_merge_allowed": False}
+    if not replay:
+        current = capture(snapshot["repo"], snapshot["pr"]["number"])
+        verification = compare(snapshot, current)
+        if verification["status"] != "UNCHANGED" or current["pr"]["state"] != "open" or current["pr"]["merged"]:
+            raise ReviewError("Evidence is stale or PR is closed; generate a new diagnosis")
+    metadata = {"mode": "historical_replay" if replay else "live_evidence", "repo": snapshot["repo"],
+                "pr": snapshot["pr"]["number"], "evidence_binding": snapshot["binding"],
+                "verification": verification}
+    return execute_patch(checkout, snapshot["pr"]["head_sha"], evidence["ai"]["answer"]["suggested_patch"],
+                         allow_paths, command, output, timeout, metadata)

@@ -109,14 +109,14 @@ def prepare(evidence: dict, checkout: Path, allow_paths: list[str], output: Path
         for name, content in originals.items():
             dest = workspace / name
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(content, encoding="utf-8")
+            dest.write_bytes(content.encode("utf-8"))
             if name in executable:
                 dest.chmod(0o755)
         # This fresh index has no inherited remotes, hooks, credentials or checkout filters.
         git("init", "--quiet", "--template=", str(workspace))
         git("-C", str(workspace), "-c", "core.autocrlf=false", "add", "--", *paths)
         patch_file = folder / "proposal.diff"
-        patch_file.write_text(proposal, encoding="utf-8")
+        patch_file.write_bytes(proposal.encode("utf-8"))
         git("-C", str(workspace), "apply", "--check", "--", str(patch_file))
         git("-C", str(workspace), "apply", "--", str(patch_file))
         changed = git("-C", str(workspace), "diff", "--name-only").splitlines()

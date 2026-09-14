@@ -18,6 +18,7 @@ from .measure import record_observation
 from .doctor import inspect_repo, write_report as write_doctor_report
 from .workflow import run_workflow
 from .draft_pr import publish_draft_pr
+from .implement import run_implementation
 
 
 def write_json(path: Path, value):
@@ -25,7 +26,7 @@ def write_json(path: Path, value):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="GitHub PR/CI diagnosis, isolated patch preparation and explicit test replay.")
+    parser = argparse.ArgumentParser(description="Evidence-bound AI coding and GitHub delivery workflow.")
     sub = parser.add_subparsers(dest="command", required=True)
     review = sub.add_parser("review", help="Collect evidence and generate a local HTML report")
     review.add_argument("--repo", required=True, help="GitHub owner/repo")
@@ -93,6 +94,16 @@ def main(argv=None):
     draft.add_argument("--output", type=Path, default=Path("runs/draft-pr"))
     draft.add_argument("--confirm-create", action="store_true",
                        help="Push the current branch and create a Draft PR after all planning checks pass")
+    implement = sub.add_parser("implement", help="Generate a bounded source patch and test it in an isolated HEAD archive")
+    implement.add_argument("contract", type=Path, help="task.json created by the task command")
+    implement.add_argument("--checkout", type=Path, required=True)
+    implement.add_argument("--allow-path", action="append", required=True,
+                           help="Exact existing source file the model may modify; repeat for each file")
+    implement.add_argument("--output", type=Path, default=Path("runs/implement"))
+    implement.add_argument("--timeout", type=int, default=120, help="Test timeout in seconds")
+    implement.add_argument("--ai-timeout", type=int, default=240, help="Model timeout in seconds")
+    implement.add_argument("--command", dest="test_command", nargs=argparse.REMAINDER, required=True,
+                           help="Explicit test executable and arguments; shell syntax is rejected")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -148,6 +159,16 @@ def main(argv=None):
                                       args.title, args.body_file, folder, args.confirm_create)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0
+        if args.command == "implement":
+            contract = json.loads(args.contract.read_text(encoding="utf-8"))
+            result = run_implementation(contract, args.checkout, args.allow_path, args.test_command,
+                                        args.output, timeout=args.timeout, ai_timeout=args.ai_timeout)
+            print(json.dumps({"status": result["status"], "tests": result["tests"],
+                              "paths": result["paths"], "folder": result["folder"],
+                              "report": str(Path(result["folder"]) / "report.html"),
+                              "original_checkout_modified": result["original_checkout_modified"],
+                              "remote_modified": result["remote_modified"]}, ensure_ascii=False, indent=2))
+            return 0 if result["status"] == "READY_FOR_HUMAN_REVIEW" else 2
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:
