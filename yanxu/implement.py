@@ -203,6 +203,14 @@ def _load_sources(checkout: Path, sha: str, allow_paths: list[str]) -> dict[str,
     return sources
 
 
+def _working_tree_changes(checkout: Path) -> str:
+    # Respect the user's line-ending configuration while disabling hook/fsmonitor execution.
+    return command([
+        "git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=" + os.devnull,
+        "-C", str(checkout), "status", "--porcelain=v1", "--untracked-files=all",
+    ])
+
+
 def render_report(result: dict) -> str:
     status = html.escape(result["status"])
     rows = "".join(f"<li><code>{html.escape(path)}</code></li>" for path in result["paths"])
@@ -217,7 +225,7 @@ def run_implementation(contract: dict, checkout: Path, allow_paths: list[str], t
     if not checkout.is_dir() or not (checkout / ".git").exists():
         raise ReviewError("--checkout must be an existing Git repository")
     _validate_contract(contract, checkout)
-    if git("-C", str(checkout), "status", "--porcelain"):
+    if _working_tree_changes(checkout):
         raise ReviewError("Working tree must be clean before controlled implementation")
     validate_test_command(test_command)
     if timeout < 1 or timeout > 900 or ai_timeout < 1 or ai_timeout > 900:

@@ -30,13 +30,14 @@ class ControlledImplementationTests(unittest.TestCase):
         self.repo.mkdir()
         (self.repo / "sample").mkdir()
         (self.repo / "tests").mkdir()
-        (self.repo / "README.md").write_text("# Demo\n", encoding="utf-8")
-        (self.repo / "sample/value.py").write_text("def value():\n    return 0\n", encoding="utf-8")
-        (self.repo / "sample/other.py").write_text("OTHER = True\n", encoding="utf-8")
-        (self.repo / "tests/test_value.py").write_text(
-            "import unittest\nfrom sample.value import value\n\nclass ValueTests(unittest.TestCase):\n"
-            "    def test_value(self):\n        self.assertEqual(value(), 1)\n", encoding="utf-8")
+        (self.repo / "README.md").write_bytes(b"# Demo\n")
+        (self.repo / "sample/value.py").write_bytes(b"def value():\n    return 0\n")
+        (self.repo / "sample/other.py").write_bytes(b"OTHER = True\n")
+        (self.repo / "tests/test_value.py").write_bytes(
+            b"import unittest\nfrom sample.value import value\n\nclass ValueTests(unittest.TestCase):\n"
+            b"    def test_value(self):\n        self.assertEqual(value(), 1)\n")
         self.git("init", "-q")
+        self.git("config", "core.autocrlf", "false")
         self.git("add", ".")
         self.git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture")
         self.contract = build_contract("Make value return 1", self.repo)

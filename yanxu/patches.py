@@ -116,7 +116,7 @@ def prepare(evidence: dict, checkout: Path, allow_paths: list[str], output: Path
         git("init", "--quiet", "--template=", str(workspace))
         git("-C", str(workspace), "-c", "core.autocrlf=false", "add", "--", *paths)
         patch_file = folder / "proposal.diff"
-        patch_file.write_text(proposal, encoding="utf-8")
+        patch_file.write_bytes(proposal.encode("utf-8"))
         git("-C", str(workspace), "apply", "--check", "--", str(patch_file))
         git("-C", str(workspace), "apply", "--", str(patch_file))
         changed = git("-C", str(workspace), "diff", "--name-only").splitlines()

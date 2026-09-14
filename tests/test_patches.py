@@ -30,8 +30,9 @@ class PatchTests(unittest.TestCase):
         self.repo.mkdir()
         (self.repo / "sample").mkdir()
         self.source = self.repo / "sample/value.py"
-        self.source.write_text("def value():\n    return 0\n")
+        self.source.write_bytes(b"def value():\n    return 0\n")
         self.git("init", "-q")
+        self.git("config", "core.autocrlf", "false")
         self.git("add", "sample/value.py")
         self.git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture")
         sha = self.git("rev-parse", "HEAD").strip()
