@@ -28,6 +28,8 @@ v0.10 新增：[`implement` 受控代码生成与自动测试](docs/CONTROLLED_I
 
 v0.11 新增：[`board` 本地交付证据看板](docs/TEAM_BOARD.md)。它只汇总明确指定目录中的 Yanxu 运行产物和可选真实测量数据，输出可在客户内网查看的静态 HTML；不读取业务源码、不上传、不创建 PR。
 
+v0.12 新增：[`policy` 团队规则包](docs/TEAM_POLICY.md)。技术负责人可固定允许 AI 修改的路径和批准测试命令；受控实现发现路径或测试漂移时在模型调用前拒绝，并把规则指纹写入交付证据。
+
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
 ## 快速开始
@@ -88,6 +90,9 @@ python -m yanxu benchmark runs/observed.json --output runs/observed-report
 # 将已有运行产物汇总为本地静态团队看板；少于 5 个真实有效配对任务不显示提效百分比
 python -m yanxu board --runs runs --measurements runs/observed.json --output runs/board.html
 
+# 将团队允许路径和批准测试命令固定为规则包；--command 必须放在最后
+python -m yanxu policy --name "orders-service" --allow-path src/example.py --command python -m unittest discover -s tests -v
+
 # 开发前检查仓库是否具备受约束 AI Coding 的基本条件
 python -m yanxu doctor --repo . --output runs/doctor
 
@@ -126,6 +131,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 受控 Draft PR 发布 | 已提交功能分支、GitHub 目标、base/head、正文和精确文件白名单 | 默认只输出计划；显式确认后推送分支并创建 Draft PR，保留部分失败状态 |
 | 受控代码生成 | 任务合同、1–10 个已有源码白名单、显式测试命令 | AI 标准 diff、隔离 HEAD 归档、测试日志、JSON/HTML 报告；原工作区和远端不变 |
 | 本地交付证据看板 | 明确指定目录的工作流/受控实现 JSON、可选真实测量数据 | 静态 HTML/JSON 汇总；运行、测试、人工复核与测量状态可见；不读取业务源码、不上传、不写远端 |
+| 团队规则包 | 技术负责人指定的路径白名单与批准测试命令 | `implement` 在模型调用前拒绝规则外路径或测试漂移；规则 SHA-256 写入 manifest |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 

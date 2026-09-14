@@ -16,6 +16,7 @@ from .core import ReviewError, command, now, redact
 from .patches import git, patch_paths, safe_path
 from .test_runner import execute_patch, test_command as validate_test_command
 from .task import CONTEXT_NAMES
+from .policy import enforce_policy
 
 
 IMPLEMENT_SCHEMA = {
@@ -220,7 +221,7 @@ def render_report(result: dict) -> str:
 
 
 def run_implementation(contract: dict, checkout: Path, allow_paths: list[str], test_command: list[str],
-                       output: Path, timeout: int = 120, ai_timeout: int = 240) -> dict:
+                       output: Path, timeout: int = 120, ai_timeout: int = 240, policy: dict | None = None) -> dict:
     checkout = checkout.resolve()
     if not checkout.is_dir() or not (checkout / ".git").exists():
         raise ReviewError("--checkout must be an existing Git repository")
@@ -228,6 +229,7 @@ def run_implementation(contract: dict, checkout: Path, allow_paths: list[str], t
     if _working_tree_changes(checkout):
         raise ReviewError("Working tree must be clean before controlled implementation")
     validate_test_command(test_command)
+    policy_metadata = enforce_policy(policy, allow_paths, test_command) if policy is not None else None
     if timeout < 1 or timeout > 900 or ai_timeout < 1 or ai_timeout > 900:
         raise ReviewError("Model and test timeouts must be between 1 and 900 seconds")
     sha = git("-C", str(checkout), "rev-parse", "--verify", "HEAD").strip()
@@ -254,6 +256,8 @@ def run_implementation(contract: dict, checkout: Path, allow_paths: list[str], t
         "model": model,
         "ready_for_human_review": False,
     }
+    if policy_metadata is not None:
+        metadata["team_policy"] = policy_metadata
     result = execute_patch(
         checkout, sha, model["answer"]["suggested_patch"], list(sources), test_command,
         output, timeout=timeout, metadata=metadata, prefix="implementation-",

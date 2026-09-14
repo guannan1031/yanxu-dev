@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from yanxu.core import ReviewError
 from yanxu.implement import run_implementation
+from yanxu.policy import create_policy
 from yanxu.task import build_contract
 
 
@@ -124,6 +125,27 @@ class ControlledImplementationTests(unittest.TestCase):
         with patch("yanxu.implement.generate_patch", side_effect=AssertionError("model called")):
             with self.assertRaisesRegex(ReviewError, "allowlist"):
                 run_implementation(self.contract, self.repo, ["sample/value.py"], ["sh", "-c", "true"], self.root / "runs")
+
+    def test_team_policy_binds_paths_and_test_command_to_the_run(self):
+        command = [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"]
+        policy = create_policy("demo team", ["sample/value.py"], command)
+        with patch("yanxu.implement.generate_patch", return_value=self.model()):
+            result = run_implementation(self.contract, self.repo, ["sample/value.py"], command,
+                                        self.root / "runs", timeout=10, policy=policy)
+        manifest = json.loads(Path(result["folder"], "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["team_policy"]["name"], "demo team")
+        self.assertEqual(len(manifest["team_policy"]["sha256"]), 64)
+
+    def test_team_policy_rejects_scope_or_test_drift_before_model(self):
+        command = [sys.executable, "-m", "unittest"]
+        policy = create_policy("demo team", ["sample/value.py"], command)
+        with patch("yanxu.implement.generate_patch", side_effect=AssertionError("model called")):
+            with self.assertRaisesRegex(ReviewError, "policy"):
+                run_implementation(self.contract, self.repo, ["sample/other.py"], command,
+                                   self.root / "runs", policy=policy)
+            with self.assertRaisesRegex(ReviewError, "policy"):
+                run_implementation(self.contract, self.repo, ["sample/value.py"], [sys.executable, "-m", "unittest", "discover"],
+                                   self.root / "runs", policy=policy)
 
 
 if __name__ == "__main__":
