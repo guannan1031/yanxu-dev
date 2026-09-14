@@ -1,6 +1,6 @@
 # 私有团队服务 Alpha
 
-Yanxu Dev v0.17.1 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件和客户录入的实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、成本和审计记录。
+Yanxu Dev v0.18.0 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件和客户录入的实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、成本和审计记录，运维人员使用统一命令备份和恢复。
 
 ## 当前闭环
 
@@ -99,21 +99,19 @@ PowerShell 使用 `$env:YANXU_API_TOKEN` 保存当前会话的令牌。`publish-
 
 ## 备份与恢复
 
-下面的命令让 PostgreSQL 在容器内部生成二进制备份，再复制到当前目录，因此兼容 PowerShell，不依赖终端重定向编码。
+推荐使用跨平台 `ops` 命令。备份拒绝覆盖已有文件，并同时生成带字节数和 SHA-256 的 manifest：
 
 ```bash
-docker compose exec -T db pg_dump -U yanxu -d yanxu -Fc -f /tmp/yanxu-backup.dump
-docker compose cp db:/tmp/yanxu-backup.dump ./yanxu-backup.dump
+python -m yanxu ops backup --compose-dir . --output backups/yanxu-backup.dump
 ```
 
-恢复会覆盖当前私有数据库，应先停止 `app`，并只对已确认的备份执行：
+恢复会覆盖当前私有数据库。命令在停止服务前核对 manifest 和归档结构，使用单事务恢复，并在成功或失败后尝试重启 app/worker：
 
 ```bash
-docker compose stop app worker
-docker compose cp ./yanxu-backup.dump db:/tmp/yanxu-backup.dump
-docker compose exec -T db pg_restore -U yanxu -d yanxu --clean --if-exists /tmp/yanxu-backup.dump
-docker compose start app worker
+python -m yanxu ops restore backups/yanxu-backup.dump --compose-dir . --confirm-restore
 ```
+
+完整升级、回滚、Windows 命令和故障排查见[备份、恢复与升级](UPGRADE_AND_RECOVERY.md)。
 
 ## 商业与面试价值
 

@@ -154,6 +154,15 @@ def main(argv=None):
     team_publish.add_argument("--server", required=True)
     team_publish.add_argument("--workspace-id", required=True)
     team_publish.add_argument("--token-env", default="YANXU_API_TOKEN")
+    ops = sub.add_parser("ops", help="Back up or restore the Docker Compose private service")
+    ops_sub = ops.add_subparsers(dest="ops_command", required=True)
+    ops_backup = ops_sub.add_parser("backup", help="Create a PostgreSQL dump and SHA-256 manifest")
+    ops_backup.add_argument("--compose-dir", type=Path, default=Path("."))
+    ops_backup.add_argument("--output", type=Path, required=True)
+    ops_restore = ops_sub.add_parser("restore", help="Verify and restore a Yanxu PostgreSQL backup")
+    ops_restore.add_argument("backup", type=Path)
+    ops_restore.add_argument("--compose-dir", type=Path, default=Path("."))
+    ops_restore.add_argument("--confirm-restore", action="store_true")
     serve = sub.add_parser("serve", help="Run the optional private PostgreSQL team service")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8080)
@@ -162,6 +171,14 @@ def main(argv=None):
     worker.add_argument("--interval", type=float, default=2.0)
     args = parser.parse_args(argv)
     try:
+        if args.command == "ops":
+            from .operations import backup_service, restore_service
+            if args.ops_command == "backup":
+                result = backup_service(args.compose_dir, args.output)
+            else:
+                result = restore_service(args.compose_dir, args.backup, args.confirm_restore)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.command == "serve":
             from .service_api import run_server
             run_server(args.host, args.port)
