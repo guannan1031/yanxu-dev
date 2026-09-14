@@ -46,6 +46,8 @@
 
 截图见[成本与试点证据包](PILOT_COSTS.md)。这些成本、组织和事件均为本地合成验收数据，不是客户账单、生产用量、外部 UAT 或商业收入。
 
+公开证据：[v0.17.1 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.17.1) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34904575884) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34904574988)。Release JSON SHA-256 为 `f1d3c603289b08177b891d1fcef626768b345bad74d557c2ac22ce4ff3666b6d`，截图 SHA-256 为 `0ff5f7d486d324456b0ef51d65103f37def1d39e0ef2625e2df246e39cc6aea1`。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
