@@ -48,7 +48,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.19.0",
+        version="0.20.0",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
@@ -77,6 +77,22 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         category: str
         amount: str
         currency: str
+        evidence_ref: str = Field(min_length=1, max_length=500)
+
+    class AcceptanceInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        criterion: str = Field(min_length=1, max_length=240)
+
+    class AcceptanceUpdate(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        status: str
+        evidence_ref: str | None = Field(default=None, max_length=500)
+        customer_confirmed: bool = False
+
+    class SupportInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        category: str
+        minutes: int = Field(ge=1, le=100000)
         evidence_ref: str = Field(min_length=1, max_length=500)
 
     def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
@@ -189,6 +205,59 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         amount_micros = call(parse_cost_amount, body.amount)
         result = call(store.create_cost_record, current, body.category, amount_micros,
                       body.currency, body.evidence_ref)
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.get("/v1/pilot/acceptance")
+    def acceptance(request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        response.headers["Cache-Control"] = "no-store"
+        return {"items": store.list_acceptance_items(current),
+                "summary": store.summarize_acceptance(current)}
+
+    @app.post("/v1/pilot/acceptance", status_code=201)
+    def create_acceptance(body: AcceptanceInput, request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        result = call(store.create_acceptance_item, current, body.criterion)
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.patch("/v1/pilot/acceptance/{item_id}")
+    def update_acceptance(item_id: str, body: AcceptanceUpdate, request: Request,
+                          response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        result = call(store.update_acceptance_item, current, item_id, body.status,
+                      body.evidence_ref, body.customer_confirmed)
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.get("/v1/pilot/support")
+    def support(request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        response.headers["Cache-Control"] = "no-store"
+        return {"items": store.list_support_records(current),
+                "summary": store.summarize_support(current)}
+
+    @app.post("/v1/pilot/support", status_code=201)
+    def create_support(body: SupportInput, request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        result = call(store.create_support_record, current, body.category, body.minutes,
+                      body.evidence_ref)
         response.headers["Cache-Control"] = "no-store"
         return result
 

@@ -10,6 +10,8 @@ The optional private service reads its database URL, bootstrap secret, and GitHu
 
 `pilot init` writes random private values to the Git-ignored `.env` and does not print them. It refuses to overwrite an existing file and applies mode `0600` on POSIX systems; Windows access still depends on the directory's ACL. `pilot doctor` reports only check identifiers and status messages. Keep `.env` in customer-approved secret storage and do not attach it to support tickets, screenshots, pilot bundles, or public issues.
 
+Pilot acceptance and support records may reference customer tickets, meeting notes, invoices, or signed documents. Store only customer-approved references, not document contents, personal data, signatures, or credentials. `customer_confirmed` is an owner-recorded fact and is not an electronic signature or independent identity verification.
+
 `prepare-fix` never executes repository code. `test-fix` executes only the explicit command in a temporary commit archive; this is process and credential isolation, not a hardened security sandbox. Never run untrusted test commands.
 
 Please report security issues privately through the repository owner's GitHub contact channel rather than a public issue.

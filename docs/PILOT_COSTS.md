@@ -49,12 +49,14 @@ flowchart LR
 
 ## ZIP 合同
 
-试点包包含四个文件：
+v0.20.0 的试点包包含六个文件：
 
 - `summary.json`：工作空间、PR/CI、Webhook、成本与审计的组织级摘要。
 - `costs.json`：最多 200 条成本记录和分组汇总。
+- `acceptance.json`：验收标准、状态、证据引用和 owner 记录的客户确认。
+- `support.json`：最多 200 条支持投入及累计分钟。
 - `audit.json`：组织级审计导出及自身指纹。
-- `manifest.json`：前三个文件的路径、字节数和 SHA-256，以及整个 manifest 的指纹。
+- `manifest.json`：前五个文件的路径、字节数和 SHA-256，以及整个 manifest 的指纹。
 
 `manifest.json` 的 `fingerprint` 计算方式：先移除 `fingerprint` 字段，再按键排序并用紧凑 JSON 分隔符编码为 UTF-8，最后计算 SHA-256。manifest 不把自身放入文件哈希列表，避免循环依赖。
 
@@ -63,7 +65,7 @@ flowchart LR
 1. `12.50` 精确保存为 `12500000` 微单位，超过 6 位小数时返回 422。
 2. viewer 写入返回 403；其他组织看不到当前组织成本。
 3. 不同币种分别汇总，不生成隐含汇率或总 ROI。
-4. ZIP 只含约定的四个文件；manifest 中每个文件哈希均可复算。
+4. ZIP 只含约定的六个文件；manifest 中每个文件哈希均可复算。
 5. 响应头指纹等于 manifest 指纹；manifest 明确标记 `NOT_MEASURED`。
 6. 浏览器能完成登录、成本录入、页面刷新和 ZIP 下载，控制台无错误。
 

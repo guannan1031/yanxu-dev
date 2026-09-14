@@ -41,7 +41,7 @@ class OperationsTests(unittest.TestCase):
         manifest = json.loads((output.with_name("pilot.dump.json")).read_text())
         self.assertEqual(manifest["sha256"], hashlib.sha256(runner.backup_bytes).hexdigest())
         self.assertEqual(manifest["bytes"], len(runner.backup_bytes))
-        self.assertEqual(manifest["yanxu_version"], "0.19.0")
+        self.assertEqual(manifest["yanxu_version"], "0.20.0")
         self.assertTrue(manifest["contains_private_service_data"])
         self.assertIn("pg_dump", runner.calls[0])
         with self.assertRaisesRegex(ReviewError, "must not already exist"):
