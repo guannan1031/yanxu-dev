@@ -30,13 +30,14 @@ class DeliveryBoardTests(unittest.TestCase):
         self.assertEqual(board["summary"]["recorded_remote_writes"], 0)
 
     def test_escapes_artifact_names_and_keeps_insufficient_measurement_exploratory(self):
-        self.write("<script>alert(1)</script>.json", {"kind": "yanxu.implementation_run", "status": "READY_FOR_HUMAN_REVIEW", "tests": "PASSED"})
+        self.write("unsafe.json", {"kind": "yanxu.implementation_run", "status": "<script>alert(1)</script>", "tests": "PASSED"})
         measurement = self.root / "observed.json"
         measurement.write_text(json.dumps({"evidence_type": "observed", "scope": "one task", "records": [{"task_id": "a", "task_type": "bugfix", "same_scope": True, "baseline": {"human_minutes": 20, "quality_passed": True, "rework_count": 0, "evidence": "base"}, "yanxu": {"human_minutes": 10, "quality_passed": True, "rework_count": 0, "evidence": "yanxu"}}]}), encoding="utf-8")
         board = build_board(self.root, measurement)
         rendered = render_html(board)
         self.assertEqual(board["benchmark"]["status"], "EXPLORATORY")
         self.assertNotIn("<script>alert(1)</script>", rendered)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", rendered)
         self.assertIn("不可计算", rendered)
 
     def test_missing_runs_directory_is_rejected(self):
