@@ -56,6 +56,7 @@ class ServiceContractTests(unittest.TestCase):
 
     def test_invalid_secure_cookie_setting_is_rejected(self):
         try:
+            import fastapi  # noqa: F401
             from yanxu.service_api import create_app
         except ImportError as exc:
             self.skipTest(f"Server test dependencies are unavailable: {exc}")
