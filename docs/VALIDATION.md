@@ -26,6 +26,15 @@
 
 上述 delivery 是本机按 GitHub 协议构造的合成请求。真实公网 GitHub App 注册、HTTPS Webhook 送达和客户仓库验收仍待试点配置，不能写成已线上联调。
 
+## v0.17.0 私有团队工作台验收（2026-09-14）
+
+- 完整测试共 109 项通过。新增覆盖浏览器会话哈希、HttpOnly/SameSite Cookie、退出撤销、底层 API Token 撤销联动、跨组织页面与导出隔离、动态文本转义、Cookie 安全配置校验和审计指纹复算。
+- Playwright 在真实 Chromium 中完成 `/login` 输入组织 Token、跳转 `/app`、读取工作空间/PR/CI/Webhook/审计状态并退出回到登录页。
+- 浏览器验收使用本地合成组织 `pilot-demo`、公开仓库 `guannan1031/yanxu-dev` 和合成 `check_run` delivery；工作台显示 1 个工作空间、1 个项目、CI `PASSING`、0 个待处理事件和 1 个快照。
+- 审计导出只返回当前组织事件；响应头与 JSON 的 `fingerprint` 一致，并可按文档规则重新计算。页面与导出均不含源码、diff、PR 正文、日志或明文 Token。
+
+截图见[私有团队工作台](PILOT_DASHBOARD.md)。这是本机私有服务的产品验收，不是外部团队 UAT、付费或效率收益证据。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。

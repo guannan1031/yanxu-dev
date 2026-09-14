@@ -62,6 +62,16 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     revoked_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS api_tokens_org_idx ON api_tokens(organization_id);
+CREATE TABLE IF NOT EXISTS web_sessions (
+    id uuid PRIMARY KEY,
+    organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    api_token_id uuid NOT NULL REFERENCES api_tokens(id) ON DELETE CASCADE,
+    session_hash char(64) NOT NULL UNIQUE,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    expires_at timestamptz NOT NULL,
+    revoked_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS web_sessions_org_idx ON web_sessions(organization_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS workspaces (
     id uuid PRIMARY KEY,
     organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -285,6 +295,52 @@ class PostgresStore:
         if not row:
             raise AuthenticationError("Bearer token is invalid or revoked")
         return Principal(str(row["organization_id"]), row["slug"], str(row["token_id"]), row["role"])
+
+    def create_web_session(self, token: str, lifetime_seconds: int = 28_800) -> dict:
+        principal = self.authenticate(token)
+        if not isinstance(lifetime_seconds, int) or not 300 <= lifetime_seconds <= 86_400:
+            raise ValidationError("Web session lifetime must be between 300 and 86400 seconds")
+        plaintext = secrets.token_urlsafe(32)
+        session_id = str(uuid.uuid4())
+        with self._connect() as connection:
+            row = connection.execute(
+                "INSERT INTO web_sessions (id, organization_id, api_token_id, session_hash, expires_at) "
+                "VALUES (%s, %s, %s, %s, now() + (%s * interval '1 second')) "
+                "RETURNING id, expires_at",
+                (session_id, principal.organization_id, principal.token_id,
+                 hashlib.sha256(plaintext.encode("utf-8")).hexdigest(), lifetime_seconds),
+            ).fetchone()
+            self._audit(connection, principal, "session.created", "web_session", session_id, {})
+        return {"session": plaintext, "expires_at": row["expires_at"].isoformat(),
+                "principal": principal}
+
+    def authenticate_web_session(self, session: str) -> Principal:
+        if not isinstance(session, str) or len(session) < 24 or len(session) > 512:
+            raise AuthenticationError("Web session is invalid or expired")
+        digest = hashlib.sha256(session.encode("utf-8")).hexdigest()
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT o.id AS organization_id, o.slug, t.id AS token_id, t.role "
+                "FROM web_sessions s JOIN api_tokens t ON t.id = s.api_token_id "
+                "JOIN organizations o ON o.id = s.organization_id "
+                "WHERE s.session_hash = %s AND s.revoked_at IS NULL AND s.expires_at > now() "
+                "AND t.revoked_at IS NULL",
+                (digest,),
+            ).fetchone()
+        if not row:
+            raise AuthenticationError("Web session is invalid or expired")
+        return Principal(str(row["organization_id"]), row["slug"], str(row["token_id"]), row["role"])
+
+    def revoke_web_session(self, session: str) -> None:
+        principal = self.authenticate_web_session(session)
+        digest = hashlib.sha256(session.encode("utf-8")).hexdigest()
+        with self._connect() as connection:
+            row = connection.execute(
+                "UPDATE web_sessions SET revoked_at = COALESCE(revoked_at, now()) "
+                "WHERE session_hash = %s AND organization_id = %s RETURNING id",
+                (digest, principal.organization_id),
+            ).fetchone()
+            self._audit(connection, principal, "session.revoked", "web_session", str(row["id"]), {})
 
     def issue_token(self, principal: Principal, label: str, role: str) -> dict:
         if principal.role != "owner":

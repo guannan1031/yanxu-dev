@@ -2,11 +2,11 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.16.1 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和团队证据外，客户自建 GitHub App 可通过签名 Webhook 将事件送入组织隔离的幂等队列，由独立 Worker 处理并记录审计。
+v0.17.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器登录私有工作台，查看接入进度、跨项目交付状态和审计证据。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
-已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[运行证据与简历表述](docs/VALIDATION.md) · [团队 GitHub 同步演示](docs/team-github-demo.html) · [历史演示报告 HTML](docs/index.html) · [Console 工作台原型](docs/console.html)。
+已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[运行证据与简历表述](docs/VALIDATION.md) · [私有团队工作台](docs/PILOT_DASHBOARD.md) · [团队 GitHub 同步演示](docs/team-github-demo.html) · [历史演示报告 HTML](docs/index.html)。
 
 v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
 
@@ -39,6 +39,8 @@ v0.15 新增：`team set-github` 为项目更新当前 PR，`team sync-github` �
 v0.16 新增：[`serve` 私有团队服务](docs/PRIVATE_SERVICE.md)。FastAPI + PostgreSQL 持久化工作空间和标准化快照，提供组织隔离、`owner/viewer` 权限、哈希令牌、撤权、幂等写入与审计；Docker Compose 可在 Windows、macOS 和 Linux 私有部署。
 
 v0.16.1 新增：[GitHub App/Webhook 接入](docs/GITHUB_APP.md)。验证 `X-Hub-Signature-256`，按 installation 绑定组织，以 delivery id 去重；独立 Worker 处理事件，installation suspend/deleted 后立即停止接受后续事件。
+
+v0.17 新增：[私有团队工作台](docs/PILOT_DASHBOARD.md)。组织 Token 只用于换取短期 HttpOnly 会话；浏览器页面集中展示接入进度、工作空间、标准化 PR/CI、Webhook 队列和最近审计，并可导出带 SHA-256 指纹的组织级 JSON 证据。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -114,6 +116,7 @@ python -m yanxu team export .yanxu/team-workspace.json --github-snapshot runs/te
 # 可选私有服务：完整部署、鉴权和备份命令见 docs/PRIVATE_SERVICE.md
 pip install -e '.[server]'
 python -m yanxu serve
+# 浏览器打开 http://127.0.0.1:8080/login
 python -m yanxu team publish-snapshot runs/team-github/TIMESTAMP/team-github.json \
   --server http://127.0.0.1:8080 --workspace-id WORKSPACE_UUID
 
@@ -158,6 +161,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 团队规则包 | 技术负责人指定的路径白名单与批准测试命令 | `implement` 在模型调用前拒绝规则外路径或测试漂移；规则 SHA-256 写入 manifest |
 | 私有团队工作空间 Alpha | 显式登记的多个项目运行目录与可选测量文件 | 跨项目静态看板；项目不可用状态可见；不读取源码、不上传、不聚合不同范围的效率百分比 |
 | 私有团队服务 Alpha | 标准化快照、组织令牌、签名 GitHub Webhook、PostgreSQL | 组织隔离、owner/viewer、幂等快照/delivery、撤权、Worker 与审计；Docker Compose 重启后数据可恢复 |
+| 私有团队工作台 | 组织 Token 换取短期 HttpOnly 会话；读取本组织服务状态 | 接入进度、工作空间、PR/CI、Webhook 与审计网页；组织级审计 JSON 带可复算指纹 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 
@@ -179,7 +183,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现项目体检、任务工作流、上下文合同、受控代码生成、版本绑定、规则检查、结构化报告、过期核验、隔离测试验证、受控 Draft PR、配对提效评测、PostgreSQL 私有服务和 GitHub App/Webhook 事件队列；模型能力复用成熟执行器。尚未完成真实公网 GitHub App 联调、LangGraph、多 Agent、向量 RAG、自动合并或生产 CD，不应在简历中写成已完成。
+我们实现项目体检、任务工作流、上下文合同、受控代码生成、版本绑定、规则检查、结构化报告、过期核验、隔离测试验证、受控 Draft PR、配对提效评测、PostgreSQL 私有服务、GitHub App/Webhook 事件队列和私有团队工作台；模型能力复用成熟执行器。尚未完成真实公网 GitHub App 联调、LangGraph、多 Agent、向量 RAG、自动合并或生产 CD，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 

@@ -10,9 +10,10 @@ from .service import (AuthenticationError, AuthorizationError, ConflictError,
 
 
 def create_app(database_url: str | None = None, bootstrap: dict | None = None,
-               github_webhook_secret: str | None = None):
+               github_webhook_secret: str | None = None, secure_cookies: bool | None = None):
     try:
         from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
+        from fastapi.responses import HTMLResponse, RedirectResponse, Response
         from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
         from pydantic import BaseModel, ConfigDict, Field
     except ImportError as exc:
@@ -23,6 +24,11 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
     from .github_events import GitHubEventStore
     github_store = GitHubEventStore(database_url)
     github_webhook_secret = github_webhook_secret or os.environ.get("YANXU_GITHUB_WEBHOOK_SECRET")
+    if secure_cookies is None and "YANXU_SECURE_COOKIES" in os.environ:
+        cookie_setting = os.environ["YANXU_SECURE_COOKIES"].strip().lower()
+        if cookie_setting not in {"1", "true", "yes", "0", "false", "no"}:
+            raise ValidationError("YANXU_SECURE_COOKIES must be true or false")
+        secure_cookies = cookie_setting in {"1", "true", "yes"}
     if bootstrap is None:
         values = {
             "slug": os.environ.get("YANXU_BOOTSTRAP_ORG_SLUG"),
@@ -42,7 +48,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.16.1",
+        version="0.17.0",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
@@ -61,6 +67,10 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         model_config = ConfigDict(extra="forbid")
         github_installation_id: int = Field(gt=0)
         account_login: str = Field(min_length=1, max_length=120)
+
+    class SessionInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        token: str = Field(min_length=24, max_length=512)
 
     def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
         if credentials is None or credentials.scheme.lower() != "bearer":
@@ -89,6 +99,21 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         except AuthenticationError as exc:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
 
+    def browser_principal(request: Request) -> Principal:
+        session = request.cookies.get("yanxu_session", "")
+        return store.authenticate_web_session(session)
+
+    def html_response(content: str, status_code: int = 200):
+        return HTMLResponse(content, status_code=status_code, headers={
+            "Cache-Control": "no-store",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; "
+                                       "script-src 'unsafe-inline'; img-src data:; form-action 'self'; "
+                                       "base-uri 'none'; frame-ancestors 'none'",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+        })
+
     @app.get("/healthz")
     def healthz():
         try:
@@ -96,6 +121,60 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         except Exception:
             raise HTTPException(status_code=503, detail="Database is unavailable")
         return {"status": "ok" if healthy else "unavailable", "database": healthy}
+
+    @app.get("/", include_in_schema=False)
+    def root():
+        return RedirectResponse("/app", status_code=303)
+
+    @app.get("/login")
+    def login_page():
+        from .pilot_dashboard import render_login
+        return html_response(render_login())
+
+    @app.post("/v1/session")
+    def create_session(body: SessionInput, request: Request):
+        result = call(store.create_web_session, body.token)
+        response = Response(content='{"status":"ok"}', media_type="application/json",
+                            headers={"Cache-Control": "no-store"})
+        use_secure_cookie = secure_cookies if secure_cookies is not None else request.url.scheme == "https"
+        response.set_cookie("yanxu_session", result["session"], max_age=28_800,
+                            httponly=True, secure=use_secure_cookie, samesite="strict", path="/")
+        return response
+
+    @app.get("/app")
+    def dashboard(request: Request):
+        from .pilot_dashboard import build_summary, render_dashboard
+        try:
+            current = browser_principal(request)
+        except AuthenticationError:
+            return RedirectResponse("/login", status_code=303)
+        return html_response(render_dashboard(build_summary(store, github_store, current)))
+
+    @app.get("/v1/audit/export")
+    def audit_export(request: Request):
+        from .pilot_dashboard import build_audit_export
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        body, fingerprint = build_audit_export(store, current)
+        return Response(content=body, media_type="application/json", headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="yanxu-audit-{current.organization_slug}.json"',
+            "X-Yanxu-Evidence-Fingerprint": fingerprint,
+        })
+
+    @app.post("/logout")
+    def logout(request: Request):
+        session = request.cookies.get("yanxu_session", "")
+        if session:
+            try:
+                store.revoke_web_session(session)
+            except AuthenticationError:
+                pass
+        response = RedirectResponse("/login", status_code=303)
+        response.delete_cookie("yanxu_session", path="/")
+        return response
 
     @app.get("/v1/me")
     def me(current: Annotated[Principal, Depends(principal)]):

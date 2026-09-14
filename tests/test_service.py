@@ -1,3 +1,5 @@
+import hashlib
+import json
 import os
 import unittest
 import uuid
@@ -52,6 +54,23 @@ class ServiceContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "UUID"):
             PostgresStore("unused").latest_snapshot(principal, "not-a-uuid")
 
+    def test_invalid_secure_cookie_setting_is_rejected(self):
+        try:
+            import fastapi  # noqa: F401
+            from yanxu.service_api import create_app
+        except ImportError as exc:
+            self.skipTest(f"Server test dependencies are unavailable: {exc}")
+        previous = os.environ.get("YANXU_SECURE_COOKIES")
+        os.environ["YANXU_SECURE_COOKIES"] = "typo"
+        try:
+            with self.assertRaisesRegex(ValidationError, "true or false"):
+                create_app("unused")
+        finally:
+            if previous is None:
+                os.environ.pop("YANXU_SECURE_COOKIES", None)
+            else:
+                os.environ["YANXU_SECURE_COOKIES"] = previous
+
 
 @unittest.skipUnless(os.environ.get("YANXU_TEST_DATABASE_URL"),
                      "YANXU_TEST_DATABASE_URL is required for PostgreSQL integration tests")
@@ -91,11 +110,22 @@ class PostgresServiceTests(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.store.create_workspace(viewer, "Forbidden")
 
+        web_session = self.store.create_web_session(issued["token"])
+        self.assertEqual(self.store.authenticate_web_session(web_session["session"]).role, "viewer")
+        with self.store._connect() as connection:
+            plaintext_matches = connection.execute(
+                "SELECT count(*) AS count FROM web_sessions WHERE session_hash = %s",
+                (web_session["session"],),
+            ).fetchone()["count"]
+        self.assertEqual(plaintext_matches, 0)
+
         second_owner = self.store.issue_token(self.owner, "backup-owner", "owner")
         backup_owner = self.store.authenticate(second_owner["token"])
         self.store.revoke_token(backup_owner, issued["id"])
         with self.assertRaises(AuthenticationError):
             self.store.authenticate(issued["token"])
+        with self.assertRaises(AuthenticationError):
+            self.store.authenticate_web_session(web_session["session"])
 
         actions = [item["action"] for item in self.store.list_audit(self.owner)]
         self.assertEqual(actions.count("snapshot.saved"), 1)
@@ -127,3 +157,54 @@ class PostgresServiceTests(unittest.TestCase):
                                          json={"name": "Denied"}).status_code, 403)
             other_headers = {"Authorization": f"Bearer {self.other_token}"}
             self.assertEqual(client.get("/v1/workspaces", headers=other_headers).json()["items"], [])
+
+    def test_browser_session_dashboard_audit_export_and_logout(self):
+        try:
+            from fastapi.testclient import TestClient
+            from yanxu.service_api import create_app
+        except ImportError as exc:
+            self.skipTest(f"Server test dependencies are unavailable: {exc}")
+
+        workspace = self.store.create_workspace(self.owner, "Pilot Dashboard")
+        self.store.save_snapshot(self.owner, workspace["id"], sample_snapshot("Pilot Dashboard"))
+        app = create_app(os.environ["YANXU_TEST_DATABASE_URL"], secure_cookies=False)
+        with TestClient(app) as client:
+            root = client.get("/", follow_redirects=False)
+            self.assertEqual(root.status_code, 303)
+            self.assertEqual(root.headers["location"], "/app")
+            anonymous = client.get("/app", follow_redirects=False)
+            self.assertEqual(anonymous.status_code, 303)
+            self.assertEqual(anonymous.headers["location"], "/login")
+            login = client.post("/v1/session", json={"token": self.owner_token})
+            self.assertEqual(login.status_code, 200, login.text)
+            cookie = login.headers["set-cookie"]
+            self.assertIn("HttpOnly", cookie)
+            self.assertIn("SameSite=strict", cookie)
+            self.assertNotIn(self.owner_token, cookie)
+
+            dashboard = client.get("/app")
+            self.assertEqual(dashboard.status_code, 200, dashboard.text)
+            self.assertIn("default-src 'none'", dashboard.headers["content-security-policy"])
+            self.assertIn("Pilot Dashboard", dashboard.text)
+            self.assertIn("example/orders-service", dashboard.text)
+            self.assertNotIn("must never be persisted", dashboard.text)
+
+            exported = client.get("/v1/audit/export")
+            self.assertEqual(exported.status_code, 200, exported.text)
+            self.assertEqual(exported.json()["organization_slug"], self.owner.organization_slug)
+            export_payload = exported.json()
+            fingerprint = export_payload.pop("fingerprint")
+            canonical = json.dumps(export_payload, ensure_ascii=False, sort_keys=True,
+                                   separators=(",", ":")).encode("utf-8")
+            self.assertEqual(hashlib.sha256(canonical).hexdigest(), fingerprint)
+            self.assertEqual(exported.headers["x-yanxu-evidence-fingerprint"], fingerprint)
+
+            logout = client.post("/logout", follow_redirects=False)
+            self.assertEqual(logout.status_code, 303)
+            self.assertEqual(client.get("/app", follow_redirects=False).status_code, 303)
+            other_login = client.post("/v1/session", json={"token": self.other_token})
+            self.assertEqual(other_login.status_code, 200)
+            other_dashboard = client.get("/app")
+            self.assertNotIn("Pilot Dashboard", other_dashboard.text)
+            self.assertEqual(client.get("/v1/audit/export").json()["organization_slug"],
+                             self.other.organization_slug)
