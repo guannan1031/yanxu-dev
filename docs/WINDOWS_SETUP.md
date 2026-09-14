@@ -1,6 +1,6 @@
 # Windows 安装与迁移指南
 
-这份指南用于把 Yanxu Dev v0.19+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
+这份指南用于把 Yanxu Dev v0.20+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
 
 ## 选择 Windows 原生模式
 
@@ -63,6 +63,8 @@ python -m pip install -e .
 ```
 
 验收标准：脚本返回 `0 failure(s)`，完整测试通过，同时识别到 `gh` 与 `codex`。脚本只检查命令是否存在，不读取或输出登录凭据。
+
+只做安装体验时，也可以从 [v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) 下载 `yanxu_dev-0.20.0-py3-none-any.whl`；其 SHA-256 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`。继续开发、运行仓库测试或启动 Docker Compose 时仍使用上面的 clone 流程。
 
 ## 5. 生成第一个本地任务合同
 

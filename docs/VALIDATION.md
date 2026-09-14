@@ -70,7 +70,7 @@
 
 该验证说明本机冷启动路径可运行，不代表客户的 HTTPS、网络策略、GitHub App 权限或外部 UAT 已通过。
 
-## v0.20.0 试点验收与支持证据（发布候选，2026-09-15）
+## v0.20.0 试点验收与支持证据（2026-09-15）
 
 - PostgreSQL 增加组织隔离的验收项和支持记录；owner 可写，viewer 只读，另一个组织读取为空。
 - `PASS`/`FAIL` 缺少证据引用时拒绝；客户确认只允许用于 `PASS`。汇总状态区分 `INTERNAL_PASS` 与 `CUSTOMER_CONFIRMATION_RECORDED`。
@@ -78,6 +78,8 @@
 - 浏览器下载的试点 ZIP 增加 `acceptance.json` 与 `support.json`，6 个文件的 SHA-256 均可从 manifest 复算；manifest 继续标记提效 `NOT_MEASURED`。
 - PostgreSQL 集成环境执行 119 项测试全部通过；v0.20.0 wheel 的版本和服务模块检查通过。页面截图 SHA-256 为 `3762e9ac701f8b37b153d8cf5e8e87cd798e99025814c751b9970c5b7b789774`。
 - 外部客户身份、签字、付费和真实提效仍未验证。
+
+公开证据：[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312749) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312232)。Release 验证 JSON SHA-256 为 `73e1ef1fbf58d586a30a202ae9790e77dd0fe7edc1c886b506e751f49d521a43`，wheel 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`。
 
 ## 真实集成记录
 
