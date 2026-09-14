@@ -70,6 +70,15 @@
 
 该验证说明本机冷启动路径可运行，不代表客户的 HTTPS、网络策略、GitHub App 权限或外部 UAT 已通过。
 
+## v0.20.0 试点验收与支持证据（发布候选，2026-09-15）
+
+- PostgreSQL 增加组织隔离的验收项和支持记录；owner 可写，viewer 只读，另一个组织读取为空。
+- `PASS`/`FAIL` 缺少证据引用时拒绝；客户确认只允许用于 `PASS`。汇总状态区分 `INTERNAL_PASS` 与 `CUSTOMER_CONFIRMATION_RECORDED`。
+- 真实 Chromium 完成验收标准新增、状态更新、客户确认和 45 分钟接入支持记录；页面显示动态内容，控制台 0 错误。该流程发现并修复了验收更新表单的绑定时序问题，回归断言覆盖事件委托。
+- 浏览器下载的试点 ZIP 增加 `acceptance.json` 与 `support.json`，6 个文件的 SHA-256 均可从 manifest 复算；manifest 继续标记提效 `NOT_MEASURED`。
+- PostgreSQL 集成环境执行 119 项测试全部通过；v0.20.0 wheel 的版本和服务模块检查通过。页面截图 SHA-256 为 `3762e9ac701f8b37b153d8cf5e8e87cd798e99025814c751b9970c5b7b789774`。
+- 外部客户身份、签字、付费和真实提效仍未验证。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -112,8 +121,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.19.0）**
-> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台记录分币种成本并导出带 SHA-256 manifest 的试点包。跨平台初始化生成不回显的随机私密配置和 11 项脱敏预检，运维命令支持数据库备份、篡改校验和单事务恢复。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、真实 Chromium、空卷安装和 Docker 恢复验收。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.20.0）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、审计、GitHub Webhook 队列与 Docker 部署。浏览器工作台记录验收标准、客户确认、支持投入和分币种成本，导出带 SHA-256 manifest 的试点包；跨平台命令支持脱敏安装预检、数据库备份、篡改校验和单事务恢复。系统明确区分内部通过、客户确认记录和外部签字；提效未完成配对测量时保持 `NOT_MEASURED`。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 

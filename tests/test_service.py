@@ -130,6 +130,34 @@ class PostgresServiceTests(unittest.TestCase):
         with self.assertRaises(AuthorizationError):
             self.store.create_cost_record(viewer, "model", 1, "CNY", "forbidden")
 
+        acceptance = self.store.create_acceptance_item(self.owner, "Three repositories have CI evidence")
+        self.assertEqual(acceptance["status"], "PENDING")
+        self.assertEqual(self.store.summarize_acceptance(self.owner)["status"], "NEEDS_REVIEW")
+        with self.assertRaises(ValidationError):
+            self.store.update_acceptance_item(self.owner, acceptance["id"], "PASS", None, False)
+        with self.assertRaises(ValidationError):
+            self.store.update_acceptance_item(
+                self.owner, acceptance["id"], "FAIL", "failed-check-001", True)
+        with self.assertRaises(NotFoundError):
+            self.store.update_acceptance_item(
+                self.other, acceptance["id"], "PASS", "cross-org", False)
+        accepted = self.store.update_acceptance_item(
+            self.owner, acceptance["id"], "PASS", "customer-uat-001", True)
+        self.assertTrue(accepted["customer_confirmed"])
+        self.assertEqual(self.store.summarize_acceptance(self.owner)["status"],
+                         "CUSTOMER_CONFIRMATION_RECORDED")
+        self.assertEqual(self.store.list_acceptance_items(self.other), [])
+        with self.assertRaises(AuthorizationError):
+            self.store.create_acceptance_item(viewer, "Forbidden")
+
+        support = self.store.create_support_record(
+            self.owner, "onboarding", 45, "support-ticket-001")
+        self.assertEqual(support["minutes"], 45)
+        self.assertEqual(self.store.summarize_support(self.owner), {"records": 1, "minutes": 45})
+        self.assertEqual(self.store.list_support_records(self.other), [])
+        with self.assertRaises(AuthorizationError):
+            self.store.create_support_record(viewer, "training", 30, "forbidden")
+
         web_session = self.store.create_web_session(issued["token"])
         self.assertEqual(self.store.authenticate_web_session(web_session["session"]).role, "viewer")
         with self.store._connect() as connection:
@@ -152,6 +180,9 @@ class PostgresServiceTests(unittest.TestCase):
         self.assertIn("workspace.created", actions)
         self.assertIn("token.issued", actions)
         self.assertIn("token.revoked", actions)
+        self.assertIn("acceptance.created", actions)
+        self.assertIn("acceptance.updated", actions)
+        self.assertIn("support.recorded", actions)
 
     def test_http_api_requires_auth_and_enforces_roles(self):
         try:
@@ -235,11 +266,36 @@ class PostgresServiceTests(unittest.TestCase):
             self.assertIn("pilot-invoice-001", dashboard.text)
             self.assertIn("CNY 12.5", dashboard.text)
 
+            acceptance = client.post("/v1/pilot/acceptance", json={
+                "criterion": "Three repositories have CI evidence",
+            })
+            self.assertEqual(acceptance.status_code, 201, acceptance.text)
+            acceptance_id = acceptance.json()["id"]
+            self.assertEqual(client.patch(f"/v1/pilot/acceptance/{acceptance_id}", json={
+                "status": "PASS", "customer_confirmed": True,
+            }).status_code, 422)
+            accepted = client.patch(f"/v1/pilot/acceptance/{acceptance_id}", json={
+                "status": "PASS", "evidence_ref": "customer-uat-001",
+                "customer_confirmed": True,
+            })
+            self.assertEqual(accepted.status_code, 200, accepted.text)
+            support = client.post("/v1/pilot/support", json={
+                "category": "onboarding", "minutes": 45,
+                "evidence_ref": "support-ticket-001",
+            })
+            self.assertEqual(support.status_code, 201, support.text)
+            dashboard = client.get("/app")
+            self.assertIn("Three repositories have CI evidence", dashboard.text)
+            self.assertIn("customer-uat-001", dashboard.text)
+            self.assertIn("support-ticket-001", dashboard.text)
+            self.assertIn("45 分钟", dashboard.text)
+
             bundle = client.get("/v1/pilot/export")
             self.assertEqual(bundle.status_code, 200, repr(bundle.content[:200]))
             with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
                 self.assertEqual(set(archive.namelist()),
-                                 {"audit.json", "costs.json", "manifest.json", "summary.json"})
+                                 {"acceptance.json", "audit.json", "costs.json", "manifest.json",
+                                  "summary.json", "support.json"})
                 manifest = json.loads(archive.read("manifest.json"))
                 for item in manifest["files"]:
                     self.assertEqual(hashlib.sha256(archive.read(item["path"])).hexdigest(),
@@ -249,6 +305,8 @@ class PostgresServiceTests(unittest.TestCase):
                                                 separators=(",", ":")).encode("utf-8")
                 self.assertEqual(hashlib.sha256(manifest_canonical).hexdigest(), bundle_fingerprint)
                 self.assertEqual(manifest["efficiency_claim_status"], "NOT_MEASURED")
+                self.assertEqual(manifest["acceptance_claim_status"],
+                                 "CUSTOMER_CONFIRMATION_RECORDED")
             self.assertEqual(bundle.headers["x-yanxu-evidence-fingerprint"], bundle_fingerprint)
 
             logout = client.post("/logout", follow_redirects=False)
@@ -259,8 +317,17 @@ class PostgresServiceTests(unittest.TestCase):
             viewer_costs = client.get("/v1/costs")
             self.assertEqual(viewer_costs.headers["cache-control"], "no-store")
             self.assertEqual(viewer_costs.json()["items"][0]["evidence_ref"], "pilot-invoice-001")
+            self.assertEqual(client.get("/v1/pilot/acceptance").json()["summary"]["passed"], 1)
+            self.assertEqual(client.get("/v1/pilot/support").json()["summary"]["minutes"], 45)
             self.assertEqual(client.post("/v1/costs", json={
                 "category": "ci", "amount": "1", "currency": "CNY",
+                "evidence_ref": "viewer-must-not-write",
+            }).status_code, 403)
+            self.assertEqual(client.post("/v1/pilot/acceptance", json={
+                "criterion": "viewer-must-not-write",
+            }).status_code, 403)
+            self.assertEqual(client.post("/v1/pilot/support", json={
+                "category": "training", "minutes": 5,
                 "evidence_ref": "viewer-must-not-write",
             }).status_code, 403)
             client.post("/logout", follow_redirects=False)
@@ -269,5 +336,7 @@ class PostgresServiceTests(unittest.TestCase):
             other_dashboard = client.get("/app")
             self.assertNotIn("Pilot Dashboard", other_dashboard.text)
             self.assertNotIn("pilot-invoice-001", other_dashboard.text)
+            self.assertNotIn("customer-uat-001", other_dashboard.text)
+            self.assertNotIn("support-ticket-001", other_dashboard.text)
             self.assertEqual(client.get("/v1/audit/export").json()["organization_slug"],
                              self.other.organization_slug)

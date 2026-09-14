@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.19.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态、实际成本和审计证据，导出试点 ZIP，通过跨平台命令初始化、检查、备份和恢复私有部署。
+v0.20.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态，记录验收标准、客户确认、支持投入和实际成本，导出试点证据 ZIP，并通过跨平台命令初始化、检查、备份和恢复私有部署。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -47,6 +47,8 @@ v0.17.1 新增：[实际成本与试点证据包](docs/PILOT_COSTS.md)。owner �
 v0.18 新增：[备份、恢复与升级手册](docs/UPGRADE_AND_RECOVERY.md)。`ops backup` 从 Docker Compose PostgreSQL 创建自定义归档和 SHA-256 manifest；`ops restore` 在显式确认、文件哈希和归档结构校验通过后，以单事务恢复并重启 app/worker。
 
 v0.19 新增：[私有试点初始化与预检](docs/PILOT_ONBOARDING.md)。`pilot init` 生成不回显的随机数据库密码、组织 Token 和 Webhook secret，并拒绝覆盖已有 `.env`；`pilot doctor` 脱敏检查必填项、占位符、长度、端口、Docker 与 Compose 配置。[v0.19.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.19.0) 附带脱敏冷启动验证 JSON。
+
+v0.20 新增：[试点验收与支持证据](docs/PILOT_ACCEPTANCE.md)。owner 配置验收标准、记录 PASS/FAIL 证据与客户确认，并登记支持分钟；viewer 只读。导出的试点 ZIP 新增 `acceptance.json` 和 `support.json`，仍明确区分内部通过、客户确认记录和未测量提效。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -179,6 +181,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 成本与试点验收包 | owner 录入账单或工时金额、币种和证据引用 | 按币种/类型汇总实际成本；ZIP 含摘要、成本、审计和 manifest 哈希，未测量提效时明确标记 `NOT_MEASURED` |
 | 私有服务备份与恢复 | Docker Compose 项目和明确输出路径 | PostgreSQL 自定义归档、SHA-256 manifest；恢复前校验，单事务替换并重启 app/worker |
 | 私有试点初始化 | 组织 slug、名称、端口和 Docker Compose 目录 | 非覆盖 `.env`、随机私密值、脱敏 preflight JSON；Docker/Compose 配置通过才返回 `READY` |
+| 试点验收与支持 | 验收标准、状态、证据引用、客户确认和支持分钟 | 组织隔离的清单与工时记录；owner 写、viewer 读；证据 ZIP 保留声明边界 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 

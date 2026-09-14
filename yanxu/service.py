@@ -83,6 +83,30 @@ CREATE TABLE IF NOT EXISTS cost_records (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS cost_records_org_idx ON cost_records(organization_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS pilot_acceptance_items (
+    id uuid PRIMARY KEY,
+    organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    actor_token_id uuid REFERENCES api_tokens(id) ON DELETE SET NULL,
+    criterion varchar(240) NOT NULL,
+    status varchar(16) NOT NULL CHECK (status IN ('PENDING', 'PASS', 'FAIL')),
+    evidence_ref varchar(500),
+    customer_confirmed boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS pilot_acceptance_org_idx
+    ON pilot_acceptance_items(organization_id, created_at);
+CREATE TABLE IF NOT EXISTS pilot_support_records (
+    id uuid PRIMARY KEY,
+    organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    actor_token_id uuid REFERENCES api_tokens(id) ON DELETE SET NULL,
+    category varchar(24) NOT NULL CHECK (category IN ('onboarding', 'configuration', 'incident', 'training', 'custom')),
+    minutes integer NOT NULL CHECK (minutes > 0 AND minutes <= 100000),
+    evidence_ref varchar(500) NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS pilot_support_org_idx
+    ON pilot_support_records(organization_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS workspaces (
     id uuid PRIMARY KEY,
     organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -415,6 +439,121 @@ class PostgresStore:
                  "amount_micros": int(row["amount_micros"]), "records": int(row["records"])}
                 for row in rows]
 
+    def create_acceptance_item(self, principal: Principal, criterion: str) -> dict:
+        if principal.role != "owner":
+            raise AuthorizationError("Owner role is required")
+        criterion = _text(criterion, "Acceptance criterion", 240)
+        item_id = str(uuid.uuid4())
+        with self._connect() as connection:
+            row = connection.execute(
+                "INSERT INTO pilot_acceptance_items "
+                "(id, organization_id, actor_token_id, criterion, status) "
+                "VALUES (%s, %s, %s, %s, 'PENDING') "
+                "RETURNING id, criterion, status, evidence_ref, customer_confirmed, created_at, updated_at",
+                (item_id, principal.organization_id, principal.token_id, criterion),
+            ).fetchone()
+            self._audit(connection, principal, "acceptance.created", "acceptance_item", item_id,
+                        {"status": "PENDING"})
+        return self._acceptance_row(row)
+
+    def update_acceptance_item(self, principal: Principal, item_id: str, status: str,
+                               evidence_ref: str | None, customer_confirmed: bool) -> dict:
+        if principal.role != "owner":
+            raise AuthorizationError("Owner role is required")
+        item_id = validate_uuid(item_id, "Acceptance item id")
+        if status not in {"PENDING", "PASS", "FAIL"}:
+            raise ValidationError("Acceptance status is unsupported")
+        if not isinstance(customer_confirmed, bool):
+            raise ValidationError("Customer confirmation must be true or false")
+        evidence_ref = _optional_text(evidence_ref, "Acceptance evidence reference", 500)
+        if status in {"PASS", "FAIL"} and not evidence_ref:
+            raise ValidationError("PASS or FAIL acceptance requires an evidence reference")
+        if customer_confirmed and status != "PASS":
+            raise ValidationError("Customer confirmation requires PASS status")
+        with self._connect() as connection:
+            row = connection.execute(
+                "UPDATE pilot_acceptance_items SET status = %s, evidence_ref = %s, "
+                "customer_confirmed = %s, actor_token_id = %s, updated_at = now() "
+                "WHERE id = %s AND organization_id = %s "
+                "RETURNING id, criterion, status, evidence_ref, customer_confirmed, created_at, updated_at",
+                (status, evidence_ref, customer_confirmed, principal.token_id, item_id,
+                 principal.organization_id),
+            ).fetchone()
+            if not row:
+                raise NotFoundError("Acceptance item was not found")
+            self._audit(connection, principal, "acceptance.updated", "acceptance_item", item_id,
+                        {"status": status, "customer_confirmed": customer_confirmed})
+        return self._acceptance_row(row)
+
+    def list_acceptance_items(self, principal: Principal) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, criterion, status, evidence_ref, customer_confirmed, created_at, updated_at "
+                "FROM pilot_acceptance_items WHERE organization_id = %s ORDER BY created_at, id",
+                (principal.organization_id,),
+            ).fetchall()
+        return [self._acceptance_row(row) for row in rows]
+
+    def summarize_acceptance(self, principal: Principal) -> dict:
+        items = self.list_acceptance_items(principal)
+        counts = {status: sum(item["status"] == status for item in items)
+                  for status in ("PENDING", "PASS", "FAIL")}
+        confirmed = sum(item["customer_confirmed"] for item in items)
+        if not items:
+            overall = "NOT_CONFIGURED"
+        elif counts["FAIL"] or counts["PENDING"]:
+            overall = "NEEDS_REVIEW"
+        elif confirmed == len(items):
+            overall = "CUSTOMER_CONFIRMATION_RECORDED"
+        else:
+            overall = "INTERNAL_PASS"
+        return {"status": overall, "total": len(items), "pending": counts["PENDING"],
+                "passed": counts["PASS"], "failed": counts["FAIL"],
+                "customer_confirmed": confirmed}
+
+    def create_support_record(self, principal: Principal, category: str, minutes: int,
+                              evidence_ref: str) -> dict:
+        if principal.role != "owner":
+            raise AuthorizationError("Owner role is required")
+        if category not in {"onboarding", "configuration", "incident", "training", "custom"}:
+            raise ValidationError("Support category is unsupported")
+        if not isinstance(minutes, int) or isinstance(minutes, bool) or not 1 <= minutes <= 100000:
+            raise ValidationError("Support minutes must be between 1 and 100000")
+        evidence_ref = _text(evidence_ref, "Support evidence reference", 500)
+        record_id = str(uuid.uuid4())
+        with self._connect() as connection:
+            row = connection.execute(
+                "INSERT INTO pilot_support_records "
+                "(id, organization_id, actor_token_id, category, minutes, evidence_ref) "
+                "VALUES (%s, %s, %s, %s, %s, %s) "
+                "RETURNING id, category, minutes, evidence_ref, created_at",
+                (record_id, principal.organization_id, principal.token_id, category, minutes,
+                 evidence_ref),
+            ).fetchone()
+            self._audit(connection, principal, "support.recorded", "support_record", record_id,
+                        {"category": category, "minutes": minutes})
+        return self._support_row(row)
+
+    def list_support_records(self, principal: Principal, limit: int = 200) -> list[dict]:
+        limit = max(1, min(limit, 200))
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, category, minutes, evidence_ref, created_at "
+                "FROM pilot_support_records WHERE organization_id = %s "
+                "ORDER BY created_at DESC LIMIT %s",
+                (principal.organization_id, limit),
+            ).fetchall()
+        return [self._support_row(row) for row in rows]
+
+    def summarize_support(self, principal: Principal) -> dict:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT count(*) AS records, COALESCE(sum(minutes), 0) AS minutes "
+                "FROM pilot_support_records WHERE organization_id = %s",
+                (principal.organization_id,),
+            ).fetchone()
+        return {"records": int(row["records"]), "minutes": int(row["minutes"])}
+
     def issue_token(self, principal: Principal, label: str, role: str) -> dict:
         if principal.role != "owner":
             raise AuthorizationError("Owner role is required")
@@ -588,3 +727,17 @@ class PostgresStore:
                 "amount_micros": int(row["amount_micros"]), "currency": row["currency"],
                 "amount": format_cost_amount(int(row["amount_micros"])),
                 "evidence_ref": row["evidence_ref"], "created_at": row["created_at"].isoformat()}
+
+    @staticmethod
+    def _acceptance_row(row: dict) -> dict:
+        return {"id": str(row["id"]), "criterion": row["criterion"], "status": row["status"],
+                "evidence_ref": row["evidence_ref"],
+                "customer_confirmed": bool(row["customer_confirmed"]),
+                "created_at": row["created_at"].isoformat(),
+                "updated_at": row["updated_at"].isoformat()}
+
+    @staticmethod
+    def _support_row(row: dict) -> dict:
+        return {"id": str(row["id"]), "category": row["category"],
+                "minutes": int(row["minutes"]), "evidence_ref": row["evidence_ref"],
+                "created_at": row["created_at"].isoformat()}
