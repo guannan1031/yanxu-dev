@@ -21,6 +21,7 @@ from .draft_pr import publish_draft_pr
 from .implement import run_implementation
 from .board import build_board, render_html as render_board_html
 from .policy import create_policy, load_policy
+from .team import add_project, build_team_board, create_workspace, render_html as render_team_html, write_workspace
 
 
 def write_json(path: Path, value):
@@ -117,6 +118,19 @@ def main(argv=None):
     board.add_argument("--runs", type=Path, required=True, help="Explicit local directory containing Yanxu artifacts")
     board.add_argument("--measurements", type=Path, help="Optional observed measurement JSON created by record")
     board.add_argument("--output", type=Path, default=Path("runs/board.html"))
+    team = sub.add_parser("team", help="Manage a local private team workspace")
+    team_sub = team.add_subparsers(dest="team_command", required=True)
+    team_init = team_sub.add_parser("init", help="Create an empty local team workspace")
+    team_init.add_argument("--name", required=True)
+    team_init.add_argument("--output", type=Path, default=Path(".yanxu/team-workspace.json"))
+    team_add = team_sub.add_parser("add-project", help="Register one authorized local project's artifacts")
+    team_add.add_argument("workspace", type=Path)
+    team_add.add_argument("--id", required=True)
+    team_add.add_argument("--runs", type=Path, required=True)
+    team_add.add_argument("--measurements", type=Path)
+    team_board = team_sub.add_parser("board", help="Generate a local multi-project team board")
+    team_board.add_argument("workspace", type=Path)
+    team_board.add_argument("--output", type=Path, default=Path("runs/team-board.html"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -200,6 +214,24 @@ def main(argv=None):
             print(json.dumps({"board": str(output), "data": str(output.with_suffix(".json")),
                               "recorded_runs": board_result["summary"]["recorded_runs"],
                               "remote_modified": False}, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == "team":
+            if args.team_command == "init":
+                workspace = create_workspace(args.name)
+                write_workspace(args.output, workspace)
+                print(json.dumps({"workspace": str(args.output.resolve()), "name": workspace["name"]}, ensure_ascii=False, indent=2))
+                return 0
+            if args.team_command == "add-project":
+                workspace = add_project(args.workspace, args.id, args.runs, args.measurements)
+                print(json.dumps({"workspace": str(args.workspace.resolve()), "projects": len(workspace["projects"])}, ensure_ascii=False, indent=2))
+                return 0
+            team_result = build_team_board(args.workspace)
+            output = args.output.resolve()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            write_json(output.with_suffix(".json"), team_result)
+            output.write_text(render_team_html(team_result), encoding="utf-8")
+            print(json.dumps({"board": str(output), "data": str(output.with_suffix(".json")),
+                              "projects": team_result["summary"]["registered_projects"], "remote_modified": False}, ensure_ascii=False, indent=2))
             return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
