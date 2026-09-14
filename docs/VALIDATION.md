@@ -66,6 +66,8 @@
 - 使用生成的 `.env` 从空 PostgreSQL 卷构建 app/db/worker。`/healthz` 返回数据库可用，OpenAPI 版本为 `0.19.0`。
 - 生成的组织 Token 成功换取 HttpOnly 浏览器会话并进入 `onboarding-demo` 工作台；登录响应和页面未回显 Token。验证后删除合成容器、网络、卷和本地 `.env`。
 
+公开证据：[v0.19.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.19.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34906726771) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34906726183)。Release 验证 JSON SHA-256 为 `19966fef3826f797e907167eae772cad31b603dab5636563492d42c7a251c7fb`。
+
 该验证说明本机冷启动路径可运行，不代表客户的 HTTPS、网络策略、GitHub App 权限或外部 UAT 已通过。
 
 ## 真实集成记录

@@ -68,6 +68,8 @@ Invoke-RestMethod http://127.0.0.1:8080/healthz
 
 本地真实 Docker 冷启动使用 `pilot init` 生成三个 43 字符随机私密值，`.env` 权限为 `0600`；doctor 的 11 项检查全部 `PASS`，JSON 不含任一私密值。Compose 从空卷构建 v0.19.0，`/healthz` 返回数据库可用，OpenAPI 返回 `0.19.0`，组织 Token 建立 HttpOnly 会话并进入正确组织工作台，响应和页面未回显 Token。
 
+公开证据：[v0.19.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.19.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34906726771) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34906726183)。Release 验证 JSON SHA-256 为 `19966fef3826f797e907167eae772cad31b603dab5636563492d42c7a251c7fb`。
+
 这些是本地合成组织的安装验收。它没有证明客户网络、HTTPS 证书、GitHub App 权限或外部团队 UAT 已完成；正式试点仍需按客户环境逐项签字。
 
 ## 商业与面试价值
