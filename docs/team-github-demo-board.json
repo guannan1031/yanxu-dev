@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "kind": "yanxu.team_delivery_board",
+  "created_at": "2026-09-14T09:06:47.680018+00:00",
+  "workspace_name": "Yanxu Public Demo Team",
+  "projects": [
+    {
+      "id": "yanxu-dev",
+      "health": "AVAILABLE",
+      "summary": {
+        "recorded_runs": 1,
+        "isolated_tests_passed": 1,
+        "manual_review_pending": 1,
+        "recorded_remote_writes": 0
+      },
+      "benchmark_status": "NOT_MEASURED",
+      "policy": {
+        "status": "NOT_CONFIGURED",
+        "sha256": null,
+        "allowed_path_count": 0
+      },
+      "github": {
+        "id": "yanxu-dev",
+        "status": "SYNCED",
+        "repo": "guannan1031/yanxu-dev",
+        "pr": 14,
+        "ci": "PASSING",
+        "checks_total": 3,
+        "checks_passed": 3,
+        "head_sha": "b839527b38710215f2b655404bb50ae8809f72ba",
+        "base_sha": "2288b12d1e31c2173c5a26066c944d5cb781abd0",
+        "pr_state": "closed",
+        "draft": false,
+        "merged": true,
+        "binding": "af4aef19124685be45b84f079bf92ecee3d449e061c2e66baa81e472faf84e6c",
+        "assessment": "BLOCKED",
+        "blockers": [
+          "PR is not open."
+        ],
+        "auto_merge_allowed": false,
+        "captured_at": "2026-09-14T09:06:47.678241+00:00",
+        "error": null
+      },
+      "error": null
+    }
+  ],
+  "summary": {
+    "registered_projects": 1,
+    "available_projects": 1,
+    "recorded_runs": 1,
+    "isolated_tests_passed": 1,
+    "manual_review_pending": 1,
+    "github_configured_projects": 1,
+    "github_synced_projects": 1,
+    "github_blocked_projects": 1
+  },
+  "measurement_boundary": "Efficiency percentages are not aggregated across projects because task scope differs. Open each project's board and use only its matched, quality-passing records.",
+  "data_boundary": "Reads only explicitly registered local artifacts and optional normalized GitHub snapshot facts. It does not store GitHub diffs, PR bodies or logs, send artifacts, create PRs, merge, or deploy."
+}

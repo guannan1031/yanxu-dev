@@ -2,11 +2,11 @@
 
 日期：2026-09-13。用途：说明实际完成了什么，以及哪些效果尚未测量。
 
-## v0.14 当前状态（2026-09-14）
+## v0.15 当前状态（2026-09-14）
 
-当前公开工具已覆盖项目体检、任务合同、受控代码生成、隔离测试、PR/CI 证据复核、受控 Draft PR、真实测量、团队 Policy、私有团队看板和脱敏试点证据包。`team export` 只导出标准化看板、Policy 指纹、manifest 和文件哈希，不复制业务源码、原始运行产物、凭据或登记的本地绝对路径。
+当前公开工具已覆盖项目体检、任务合同、受控代码生成、隔离测试、PR/CI 证据复核、受控 Draft PR、真实测量、团队 Policy、私有团队看板、脱敏试点证据包和本地 GitHub 多项目只读同步。`team sync-github` 读取明确登记的 PR 并持久化 commit、CI、版本绑定和判断，不保存 diff、PR 正文或日志。
 
-本地完整回归共 87 项测试通过；另以 CLI 完成 `team init → policy → add-project → export` 冒烟验证，并检查 ZIP 内容、Policy 状态、本地路径与原始内容排除。远端 Linux/Windows CI 以对应发布提交的 GitHub Actions 结果为准。
+本地完整回归共 91 项测试通过。另以 CLI 对真实 [PR #14](https://github.com/guannan1031/yanxu-dev/pull/14) 完成团队同步：记录为已合并、CI `PASSING`，PR 判断为 `BLOCKED`，因为已合并 PR 不再是开放待审对象；持久化快照未包含 diff 或 PR 正文。远端 Linux/Windows CI 以对应发布提交的 GitHub Actions 结果为准。
 
 ## 真实集成记录
 
