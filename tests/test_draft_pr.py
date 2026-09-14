@@ -71,6 +71,17 @@ class DraftPrPublisherTests(unittest.TestCase):
         self.assertTrue(result["remote_modified"])
         mocked_push.assert_called_once_with(self.repo.resolve(), "feat/example")
 
+    @patch("yanxu.draft_pr._push", side_effect=ReviewError("push transport failed"))
+    def test_push_error_records_uncertain_remote_state(self, mocked_push):
+        with patch("yanxu.draft_pr._gh", side_effect=self.fake_gh), self.assertRaisesRegex(ReviewError, "transport"):
+            publish_draft_pr(self.repo, "example/demo", "main", "feat/example", self.allowed,
+                             "feat: example", self.body, self.root / "failed", confirm_create=True)
+        saved = json.loads((self.root / "failed" / "draft-pr.json").read_text())
+        self.assertEqual(saved["status"], "FAILED")
+        self.assertEqual(saved["remote_state"], "VERIFY_REQUIRED_AFTER_PUSH_ERROR")
+        self.assertFalse(saved["remote_modified"])
+        mocked_push.assert_called_once()
+
     def test_dirty_worktree_and_scope_drift_are_rejected(self):
         (self.repo / "code.py").write_text("VALUE = 2\n", encoding="utf-8")
         with self.assertRaisesRegex(ReviewError, "working tree"):

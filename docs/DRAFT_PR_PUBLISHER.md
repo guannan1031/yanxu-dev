@@ -21,7 +21,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo \
 --confirm-create
 ```
 
-工具使用无强推的 `git push -u origin <head>`，再次确认 HEAD 未变化，再通过 GitHub CLI 创建 Draft PR。推送成功但 PR 创建失败时，报告保留 `remote_branch_pushed=true`，便于人工恢复，不把部分成功写成全部完成。
+工具使用无强推的 `git push -u origin <head>`，再次确认 HEAD 未变化，再通过 GitHub CLI 创建 Draft PR。推送成功但 PR 创建失败时，报告保留 `remote_branch_pushed=true`；push 本身报错时记录 `VERIFY_REQUIRED_AFTER_PUSH_ERROR`，要求人工核对远端，不把不确定状态写成未修改或全部完成。
 
 ## 工具边界与验收
 

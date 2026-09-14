@@ -183,9 +183,12 @@ def publish_draft_pr(repo: Path, github_repo: str, base: str, head: str, allow_p
                 raise ReviewError("GitHub returned invalid base data before publishing") from exc
             if current_base != plan["base_sha"]:
                 raise ReviewError("GitHub base changed after planning; nothing was pushed")
+            result["remote_change_attempted"] = True
+            _write(folder, result)
             _push(repo.resolve(), head)
             result["remote_modified"] = True
             result["remote_branch_pushed"] = True
+            result["remote_state"] = "BRANCH_PUSHED"
             if _git(repo.resolve(), "rev-parse", "HEAD^{commit}").strip() != plan["head_sha"]:
                 raise ReviewError("HEAD changed while publishing; Draft PR was not created")
             url = _gh(repo.resolve(), "pr", "create", "--draft", "--repo", github_repo, "--base", base,
@@ -198,6 +201,8 @@ def publish_draft_pr(repo: Path, github_repo: str, base: str, head: str, allow_p
                 "report": str(folder / "draft-pr.html"), "pr_url": result.get("pr_url"),
                 "remote_modified": result["remote_modified"], "auto_merge_allowed": False}
     except ReviewError as exc:
+        if result.get("remote_change_attempted") and not result["remote_modified"]:
+            result["remote_state"] = "VERIFY_REQUIRED_AFTER_PUSH_ERROR"
         result.update(status="FAILED", error=str(exc))
         _write(folder, result)
         raise
