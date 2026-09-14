@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Yanxu Dev Console — AI Coding 研发交付工作流演示。">
+  <title>Yanxu Dev Console · 研发交付工作台</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{--ink:#102d27;--muted:#638078;--line:#dce8e2;--paper:#f5f8f6;--panel:#fff;--green:#13735b;--green-2:#dff5e9;--amber:#8b5700;--amber-bg:#fff3d9;--red:#b23a3a;--blue:#155d93;--blue-bg:#e8f4fe}
+    *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}
+    a{color:#075e4e;text-decoration:none}a:hover{text-decoration:underline}.shell{max-width:1240px;margin:auto;padding:0 24px}.notice{background:#102d27;color:#eaf8f0;font-size:13px}.notice .shell{padding-top:9px;padding-bottom:9px}.notice b{color:#bdf6d6}
+    header{background:#fff;border-bottom:1px solid var(--line)}.bar{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{font-size:20px;font-weight:760;letter-spacing:-.4px}.brand small{font-size:12px;font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:0}.nav{display:flex;align-items:center;gap:20px;font-size:14px}.nav a{color:#36544c}.button{border:0;border-radius:8px;padding:10px 14px;background:var(--green);color:#fff;font:inherit;font-weight:650;cursor:pointer}.button:hover{background:#0c5b47;text-decoration:none}.button.secondary{background:#eef5f1;color:#155a48;border:1px solid #b9d3c8}.button[disabled]{opacity:.55;cursor:not-allowed}
+    main{padding:30px 0 52px}.crumb{font-size:13px;color:var(--muted);margin-bottom:16px}.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:22px}.hero h1{font-size:28px;line-height:1.25;letter-spacing:-.6px;margin:0 0 7px}.hero p{margin:0;color:var(--muted);max-width:700px}.tag{display:inline-block;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700}.tag.demo{background:var(--amber-bg);color:var(--amber)}.tag.ok{background:var(--green-2);color:#096044}.tag.info{background:var(--blue-bg);color:var(--blue)}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px}.card{padding:18px}.label{font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--muted);text-transform:uppercase}.number{font-size:26px;font-weight:760;letter-spacing:-.6px;margin:3px 0}.hint{font-size:13px;color:var(--muted)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(310px,.85fr);gap:20px}.panel{padding:21px;margin-bottom:20px}.panel h2{font-size:17px;margin:0 0 3px}.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.panel-head p{margin:2px 0 0;color:var(--muted);font-size:13px}.task-title{font-size:19px;font-weight:730;margin:3px 0 14px}.meta{display:flex;gap:8px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:18px;padding:3px 9px;font-size:12px;color:#436057;background:#fbfdfc}.contract{display:grid;grid-template-columns:128px 1fr;gap:10px 16px;margin-top:18px;font-size:14px}.contract dt{color:var(--muted)}.contract dd{margin:0}.code{font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f3f7f5;border-radius:7px;padding:12px;overflow:auto;white-space:pre-wrap}.timeline{list-style:none;padding:0;margin:0}.timeline li{position:relative;padding:0 0 18px 30px;border-left:1px solid var(--line);margin-left:7px}.timeline li:last-child{padding-bottom:0;border-left-color:transparent}.dot{position:absolute;left:-7px;top:3px;width:13px;height:13px;border-radius:50%;background:var(--green);border:3px solid #d8f4e5}.timeline h3{font-size:14px;margin:0}.timeline p{font-size:13px;color:var(--muted);margin:2px 0 0}.kicker{font-size:12px;color:var(--muted)}
+    .gate{border-left:4px solid var(--green);padding:13px 15px;background:#f2fbf6;border-radius:0 8px 8px 0;margin-top:16px}.gate strong{display:block}.gate p{margin:3px 0 0;font-size:13px;color:#42685a}.check{width:100%;border-collapse:collapse;font-size:13px}.check th,.check td{padding:10px 5px;border-bottom:1px solid #edf2ef;text-align:left}.check th{font-size:12px;color:var(--muted);font-weight:700}.check tr:last-child td{border-bottom:0}.status{font-weight:700;font-size:12px}.pass{color:#087352}.wait{color:var(--amber)}
+    details{border:1px solid var(--line);border-radius:8px;margin-top:14px}summary{cursor:pointer;padding:11px 13px;font-weight:650;font-size:13px}details .code{margin:0 12px 12px}.approval{background:#102d27;color:#ecfff5}.approval h2{color:white}.approval p{color:#bed7cb;font-size:13px;margin:4px 0 15px}.approval .button{background:#a8e9c7;color:#0e3f32}.approval .button.secondary{background:transparent;border-color:#78a291;color:#dff6e9}.metric{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid #edf2ef}.metric:last-child{border:0}.metric b{font-size:17px}.callout{background:var(--amber-bg);border:1px solid #f0d69e;color:#744b08;border-radius:8px;padding:12px 14px;font-size:13px;margin-top:15px}.copy-row{display:flex;gap:8px;align-items:center}.copy-row .code{flex:1;margin:0;padding:10px}.copy-result{font-size:12px;color:#087352;min-height:18px}.footer{color:var(--muted);font-size:12px;padding-top:8px}.modal{display:none;position:fixed;inset:0;background:rgba(11,35,29,.46);align-items:center;justify-content:center;padding:20px}.modal.open{display:flex}.dialog{max-width:460px;background:#fff;border-radius:13px;padding:24px;box-shadow:0 20px 55px rgba(10,41,31,.25)}.dialog h2{margin:0 0 8px;font-size:20px}.dialog p{color:#516d64}.dialog .buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+    @media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.nav a{display:none}}@media(max-width:560px){.shell{padding:0 15px}.hero{display:block}.hero h1{font-size:24px}.cards{grid-template-columns:1fr}.contract{grid-template-columns:1fr;gap:3px}.contract dd{margin-bottom:10px}.bar{min-height:65px}.brand small{display:none}}
+  </style>
+</head>
+<body>
+  <div class="notice"><div class="shell"><b>原型工作台</b> · 所有任务、仓库和指标均为脱敏演示数据；页面不读取代码、不保存凭据、不执行远端写入。</div></div>
+  <header><div class="shell bar"><div class="brand">研序 · Yanxu Dev <small>Console Prototype</small></div><nav><a href="#task">任务合同</a><a href="#evidence">交付证据</a><a href="#metrics">提效评测</a><a href="https://github.com/guannan1031/yanxu-dev" target="_blank" rel="noopener">GitHub ↗</a><button class="button secondary" id="openInstall">安装本地工具</button></nav></div></header>
+  <main class="shell">
+    <div class="crumb">工作空间 / Demo Engineering / 交付任务</div>
+    <section class="hero"><div><span class="tag demo">DEMO ONLY</span><h1>把 AI Coding 过程变成可审查的研发交付</h1><p>工作台承接任务合同、隔离执行证据、PR/CI 状态与人工审批。代码处理仍由开发者本地工具、DSH 插件或 CI 执行器完成。</p></div><a class="button" href="https://github.com/guannan1031/yanxu-dev/releases/tag/v0.10.1" target="_blank" rel="noopener">查看可运行 Release ↗</a></section>
+    <section class="cards" aria-label="工作空间概览">
+      <div class="card"><div class="label">开放任务</div><div class="number">1</div><div class="hint">等待人工审核</div></div>
+      <div class="card"><div class="label">质量门禁</div><div class="number">通过</div><div class="hint">隔离测试已完成</div></div>
+      <div class="card"><div class="label">远端写入</div><div class="number">0</div><div class="hint">未创建或合并 PR</div></div>
+      <div class="card"><div class="label">真实有效样本</div><div class="number">0 / 5</div><div class="hint">暂不计算提效百分比</div></div>
+    </section>
+    <section class="layout">
+      <div>
+        <article class="panel" id="task"><div class="panel-head"><div><h2>当前任务</h2><p>结构化需求先于代码生成，减少范围漂移。</p></div><span class="tag ok">READY FOR HUMAN REVIEW</span></div><div class="task-title">REQ-024 · 修复分页端点的一基页码边界</div><div class="meta"><span class="pill">类型：Bugfix</span><span class="pill">范围：1 个源码文件</span><span class="pill">执行：隔离 HEAD 归档</span><span class="pill">风险：低</span></div><dl class="contract"><dt>目标</dt><dd>让第一页返回首个数据窗口，并保持非正页码与 size 的校验契约。</dd><dt>允许改动</dt><dd><code>sample/pagination.py</code></dd><dt>禁止项</dt><dd>不修改测试、不改依赖、不写原工作区、不推送远端。</dd><dt>验收</dt><dd><code>python -m unittest discover -s tests -v</code> 通过；人工复核标准 diff。</dd></dl><details><summary>查看机器可读任务合同</summary><pre class="code">{
+  "task_id": "REQ-024",
+  "allowed_paths": ["sample/pagination.py"],
+  "acceptance": ["all selected tests pass", "human reviews diff"],
+  "remote_write": false
+}</pre></details></article>
+        <article class="panel" id="evidence"><div class="panel-head"><div><h2>执行轨迹与交付证据</h2><p>每一步都有明确输入、状态和输出；任何阻断都会停止后续动作。</p></div><span class="tag info">可追溯</span></div><ol class="timeline"><li><span class="dot"></span><div class="kicker">01 · 项目体检</div><h3>仓库规则、启动方式、测试和 CI 已检查</h3><p>结果：READY；业务源码扫描数为 0。</p></li><li><span class="dot"></span><div class="kicker">02 · 任务合同</div><h3>需求、允许路径与验收条件已固化</h3><p>结果：只允许一个已有源码文件进入模型上下文。</p></li><li><span class="dot"></span><div class="kicker">03 · 受控代码生成</div><h3>标准 diff 仅应用于不可变 HEAD 归档</h3><p>结果：原工作区与 GitHub 保持不变。</p></li><li><span class="dot"></span><div class="kicker">04 · 隔离测试</div><h3>显式测试命令已通过</h3><p>结果：COMPLETED；测试日志与 patch manifest 已归档。</p></li><li><span class="dot"></span><div class="kicker">05 · 人工审核</div><h3>等待审阅 diff 后决定是否创建 Draft PR</h3><p>结果：未执行远端写入。</p></li></ol><div class="gate"><strong>当前结论：可以人工审阅，不是自动合并授权。</strong><p>若任务合同、提交版本、测试结论或 PR/CI 发生变化，必须重新验证证据。</p></div></article>
+        <article class="panel"><h2>质量门禁</h2><table class="check"><thead><tr><th>检查项</th><th>结果</th><th>责任边界</th></tr></thead><tbody><tr><td>允许路径检查</td><td class="status pass">PASS</td><td>工具自动</td></tr><tr><td>标准 diff 审核</td><td class="status wait">PENDING</td><td>开发者</td></tr><tr><td>隔离测试</td><td class="status pass">PASS</td><td>工具自动</td></tr><tr><td>Draft PR 创建</td><td class="status wait">PENDING</td><td>显式确认</td></tr></tbody></table></article>
+      </div>
+      <aside>
+        <section class="panel approval"><h2>发布控制</h2><p>只有人工确认发布计划、精确路径与目标分支后，才能创建 Draft PR。合并与部署始终在产品边界之外。</p><button class="button" id="openApproval">查看确认边界</button></section>
+        <section class="panel" id="metrics"><div class="panel-head"><div><h2>提效评测</h2><p>用配对的真实任务比较，而不是用模型耗时推导收益。</p></div></div><div class="metric"><span>真实有效配对任务</span><b>0 / 5</b></div><div class="metric"><span>质量通过样本</span><b>0</b></div><div class="metric"><span>可发布效率结论</span><b>暂不可用</b></div><div class="callout">当前案例仅证明流程可运行。完成至少 5 个同范围、两侧质量通过的真实任务后，才能计算人工时间减少率。</div></section>
+        <section class="panel"><h2>开发者入口</h2><p class="hint">网站管理证据；本地工具执行受控工作流。</p><div class="copy-row"><code class="code" id="command">python -m yanxu workflow "需求" --repo . --output runs/workflow</code><button class="button secondary" id="copyCommand">复制</button></div><div class="copy-result" id="copyResult" aria-live="polite"></div><p class="footer"><a href="https://github.com/guannan1031/yanxu-dsh-plugin" target="_blank" rel="noopener">DSH 插件 ↗</a> · <a href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/WINDOWS_SETUP.md" target="_blank" rel="noopener">Windows 指南 ↗</a></p></section>
+      </aside>
+    </section>
+    <footer class="footer">Yanxu Dev Console Prototype · 开源核心：CLI / GitHub Actions / DSH 插件 · 团队工作空间、私有部署与审计能力属于后续商业版本。</footer>
+  </main>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="dialog"><h2 id="modalTitle">受控发布边界</h2><p>此演示页不会创建 PR、推送代码或调用模型。实际发布需在本地运行 <code>yanxu draft-pr</code>，先查看计划，再手动增加 <code>--confirm-create</code>。</p><p>即使 Draft PR 创建成功，后续 code review、合并和部署仍由团队现有规则与人工负责。</p><div class="buttons"><button class="button secondary" id="closeModal">关闭</button></div></div></div>
+  <script>
+    const modal = document.getElementById('modal');
+    const openModal = () => modal.classList.add('open');
+    document.getElementById('openApproval').addEventListener('click', openModal);
+    document.getElementById('openInstall').addEventListener('click', openModal);
+    document.getElementById('closeModal').addEventListener('click', () => modal.classList.remove('open'));
+    modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); });
+    document.getElementById('copyCommand').addEventListener('click', async () => {
+      const result = document.getElementById('copyResult');
+      try { await navigator.clipboard.writeText(document.getElementById('command').textContent); result.textContent = '已复制本地工作流命令。'; }
+      catch { result.textContent = '浏览器未授予剪贴板权限，请手动复制。'; }
+    });
+  </script>
+</body>
+</html>
