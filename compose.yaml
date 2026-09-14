@@ -19,11 +19,21 @@ services:
       YANXU_BOOTSTRAP_ORG_SLUG: ${YANXU_BOOTSTRAP_ORG_SLUG:?set YANXU_BOOTSTRAP_ORG_SLUG}
       YANXU_BOOTSTRAP_ORG_NAME: ${YANXU_BOOTSTRAP_ORG_NAME:?set YANXU_BOOTSTRAP_ORG_NAME}
       YANXU_BOOTSTRAP_TOKEN: ${YANXU_BOOTSTRAP_TOKEN:?set YANXU_BOOTSTRAP_TOKEN}
+      YANXU_GITHUB_WEBHOOK_SECRET: ${YANXU_GITHUB_WEBHOOK_SECRET:?set YANXU_GITHUB_WEBHOOK_SECRET}
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "127.0.0.1:${YANXU_PORT:-8080}:8080"
+    restart: unless-stopped
+  worker:
+    build: .
+    command: ["yanxu", "worker", "--interval", "2"]
+    environment:
+      YANXU_DATABASE_URL: postgresql://yanxu:${YANXU_DB_PASSWORD}@db:5432/yanxu
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

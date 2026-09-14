@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.16 是可运行的开源 CLI 与可选私有团队服务：`implement` 根据任务合同和团队 Policy 生成受控补丁，在不可变 HEAD 归档中自动测试；`workflow` 串联项目体检、需求合同和 PR 证据；`team` 汇总多个授权项目、只读同步 PR/CI，并可将标准化快照显式发布到组织隔离的 PostgreSQL 服务。
+v0.16.1 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和团队证据外，客户自建 GitHub App 可通过签名 Webhook 将事件送入组织隔离的幂等队列，由独立 Worker 处理并记录审计。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -37,6 +37,8 @@ v0.14 新增：`team export` 生成可离线移交的试点证据 ZIP，包含�
 v0.15 新增：`team set-github` 为项目更新当前 PR，`team sync-github` 通过已登录的 `gh` 只读采集真实 commit、PR 和 CI 状态。持久化快照不含 diff、PR 正文或日志；单项目读取失败不会丢失其他项目结果。
 
 v0.16 新增：[`serve` 私有团队服务](docs/PRIVATE_SERVICE.md)。FastAPI + PostgreSQL 持久化工作空间和标准化快照，提供组织隔离、`owner/viewer` 权限、哈希令牌、撤权、幂等写入与审计；Docker Compose 可在 Windows、macOS 和 Linux 私有部署。
+
+v0.16.1 新增：[GitHub App/Webhook 接入](docs/GITHUB_APP.md)。验证 `X-Hub-Signature-256`，按 installation 绑定组织，以 delivery id 去重；独立 Worker 处理事件，installation suspend/deleted 后立即停止接受后续事件。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -155,7 +157,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 本地交付证据看板 | 明确指定目录的工作流/受控实现 JSON、可选真实测量数据 | 静态 HTML/JSON 汇总；运行、测试、人工复核与测量状态可见；不读取业务源码、不上传、不写远端 |
 | 团队规则包 | 技术负责人指定的路径白名单与批准测试命令 | `implement` 在模型调用前拒绝规则外路径或测试漂移；规则 SHA-256 写入 manifest |
 | 私有团队工作空间 Alpha | 显式登记的多个项目运行目录与可选测量文件 | 跨项目静态看板；项目不可用状态可见；不读取源码、不上传、不聚合不同范围的效率百分比 |
-| 私有团队服务 Alpha | 显式发布的标准化快照、组织令牌、PostgreSQL | 组织隔离、owner/viewer、幂等快照、撤权与审计；Docker Compose 重启后数据可恢复 |
+| 私有团队服务 Alpha | 标准化快照、组织令牌、签名 GitHub Webhook、PostgreSQL | 组织隔离、owner/viewer、幂等快照/delivery、撤权、Worker 与审计；Docker Compose 重启后数据可恢复 |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 
@@ -177,7 +179,7 @@ flowchart LR
     VERIFY --> HUMAN[开发者审查与后续处理]
 ```
 
-我们实现项目体检、任务工作流、上下文合同、受控代码生成、版本绑定、规则检查、结构化报告、过期核验、隔离测试验证、受控 Draft PR、配对提效评测和 PostgreSQL 私有团队服务；模型能力复用成熟执行器。尚未实现 GitHub App/Webhook、LangGraph、多 Agent、向量 RAG、自动合并或生产 CD，不应在简历中写成已完成。
+我们实现项目体检、任务工作流、上下文合同、受控代码生成、版本绑定、规则检查、结构化报告、过期核验、隔离测试验证、受控 Draft PR、配对提效评测、PostgreSQL 私有服务和 GitHub App/Webhook 事件队列；模型能力复用成熟执行器。尚未完成真实公网 GitHub App 联调、LangGraph、多 Agent、向量 RAG、自动合并或生产 CD，不应在简历中写成已完成。
 
 选择 Codex CLI 是为了复用现有环境，先交付可用版本；OpenHands SDK、gh-aw 和 Open SWE 仍是后续比较对象，不是本仓库已接入的依赖。
 

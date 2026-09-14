@@ -48,8 +48,8 @@ python -m yanxu team publish-snapshot runs/team-github/TIMESTAMP/team-github.jso
 
 证据包只包含标准化后的团队看板、可选 GitHub 快照、manifest、文件哈希和阅读说明，不复制原始运行产物、业务源码、PR diff/正文/日志、凭据或工作空间中登记的本地绝对路径。已有 ZIP 默认拒绝覆盖，便于保留每次验收的独立证据。
 
-`sync-github` 使用用户当前已登录的 GitHub CLI，每次创建独立时间戳目录。所有已配置项目同步成功时状态为 `COMPLETED`；部分失败为 `PARTIAL`，全部失败为 `FAILED`。失败项目保留错误，其他项目结果仍写入。当前版本是本地拉取模式，尚未实现 GitHub App、Webhook、后台定时同步或仓库撤权事件处理。
+`sync-github` 使用用户当前已登录的 GitHub CLI，每次创建独立时间戳目录。所有已配置项目同步成功时状态为 `COMPLETED`；部分失败为 `PARTIAL`，全部失败为 `FAILED`。失败项目保留错误，其他项目结果仍写入。v0.16.1 也提供可选的客户自建 GitHub App Webhook 和独立 Worker；本地拉取仍可单独使用。
 
 ## 商业定位
 
-这是“私有团队版 Alpha”，适合单个客户在自己的开发环境内完成多个仓库的接入验证。v0.16 已提供组织令牌、owner/viewer、PostgreSQL 和 Docker 私有部署；正式用户目录、GitHub/GitLab OAuth、Webhook、远程 Runner、多租户托管隔离和计费尚未实现。
+这是“私有团队版 Alpha”，适合单个客户在自己的开发环境内完成多个仓库的接入验证。v0.16.1 已提供组织令牌、owner/viewer、PostgreSQL、Docker 私有部署、GitHub Webhook 队列和安装撤权；正式用户目录、GitHub/GitLab OAuth、远程 Runner、多租户托管隔离和计费尚未实现。

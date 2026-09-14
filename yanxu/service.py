@@ -10,10 +10,10 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-from .core import redact, validate_repo
+from .core import ReviewError, redact, validate_repo
 
 
-class ServiceError(Exception):
+class ServiceError(ReviewError):
     """Base error safe to translate into an API response."""
 
 

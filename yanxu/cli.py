@@ -157,11 +157,20 @@ def main(argv=None):
     serve = sub.add_parser("serve", help="Run the optional private PostgreSQL team service")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8080)
+    worker = sub.add_parser("worker", help="Process verified GitHub webhook deliveries")
+    worker.add_argument("--once", action="store_true")
+    worker.add_argument("--interval", type=float, default=2.0)
     args = parser.parse_args(argv)
     try:
         if args.command == "serve":
             from .service_api import run_server
             run_server(args.host, args.port)
+            return 0
+        if args.command == "worker":
+            import os
+            from .github_events import run_worker
+            database_url = os.environ.get("YANXU_DATABASE_URL", "")
+            run_worker(database_url, args.once, args.interval)
             return 0
         if args.command == "prepare-fix":
             evidence = json.loads(args.evidence.read_text(encoding="utf-8"))

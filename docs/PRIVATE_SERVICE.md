@@ -1,6 +1,6 @@
 # 私有团队服务 Alpha
 
-Yanxu Dev v0.16 把本地 `team sync-github` 生成的标准化交付证据保存到客户自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级服务查看持久化状态和审计记录。
+Yanxu Dev v0.16.1 把本地 `team sync-github` 生成的标准化交付证据和已验证 GitHub Webhook 事件保存到客户自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级服务查看持久化状态和审计记录。
 
 ## 当前闭环
 
@@ -33,7 +33,7 @@ flowchart LR
 
 ```bash
 cp .env.example .env
-# 编辑 .env，将两个 replace-with... 值替换为本机随机值
+# 编辑 .env，将三个 replace-with... 值替换为本机随机值
 docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:8080/healthz
@@ -43,7 +43,7 @@ Windows PowerShell：
 
 ```powershell
 Copy-Item .env.example .env
-# 用记事本编辑 .env，填入仅用于本次私有部署的随机密码和至少 24 字符令牌
+# 用记事本编辑 .env，填入随机数据库密码、至少 24 字符令牌和 Webhook secret
 docker compose up -d --build
 docker compose ps
 Invoke-RestMethod http://127.0.0.1:8080/healthz
@@ -84,6 +84,9 @@ PowerShell 使用 `$env:YANXU_API_TOKEN` 保存当前会话的令牌。`publish-
 | POST | `/v1/workspaces/{id}/snapshots` | owner | 幂等保存白名单化快照 |
 | GET | `/v1/workspaces/{id}/snapshots/latest` | owner/viewer | 读取本组织最新快照 |
 | GET | `/v1/audit` | owner/viewer | 读取本组织审计事件 |
+| GET/POST | `/v1/github/installations` | 读：全部；写：owner | 查看或绑定本组织 GitHub App installation |
+| GET | `/v1/github/deliveries` | owner/viewer | 查看标准化事件和 Worker 状态 |
+| POST | `/webhooks/github` | GitHub HMAC | 验证、去重并排队 GitHub 事件 |
 
 ## 备份与恢复
 
@@ -97,14 +100,14 @@ docker compose cp db:/tmp/yanxu-backup.dump ./yanxu-backup.dump
 恢复会覆盖当前私有数据库，应先停止 `app`，并只对已确认的备份执行：
 
 ```bash
-docker compose stop app
+docker compose stop app worker
 docker compose cp ./yanxu-backup.dump db:/tmp/yanxu-backup.dump
 docker compose exec -T db pg_restore -U yanxu -d yanxu --clean --if-exists /tmp/yanxu-backup.dump
-docker compose start app
+docker compose start app worker
 ```
 
 ## 商业与面试价值
 
 这一版把“个人 CLI 演示”推进为可安装的私有团队服务：客户数据留在自己的 PostgreSQL，负责人可以分发只读账号，交付证据跨重启保留，并能核对谁创建了工作空间、发布了快照或管理了令牌。可收费内容是私有安装、团队 Policy 配置、仓库接入、验收和维护支持。
 
-当前还没有外部付费客户或足够的真实配对任务，因此不能声称已经产生收入或固定提效比例。下一步是 GitHub App/Webhook、事件去重与仓库撤权，然后用四周试点记录至少 5 个质量通过的配对任务。
+当前还没有外部付费客户或足够的真实配对任务，因此不能声称已经产生收入或固定提效比例。GitHub 事件能力的配置与边界见 [GitHub App 接入](GITHUB_APP.md)；下一步是团队网页、用量成本和四周试点验收。
