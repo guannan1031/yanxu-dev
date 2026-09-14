@@ -8,6 +8,15 @@
 
 本地完整回归共 91 项测试通过。另以 CLI 对真实 [PR #14](https://github.com/guannan1031/yanxu-dev/pull/14) 完成团队同步：记录为已合并、CI `PASSING`，PR 判断为 `BLOCKED`，因为已合并 PR 不再是开放待审对象；持久化快照未包含 diff 或 PR 正文。远端 Linux/Windows CI 以对应发布提交的 GitHub Actions 结果为准。
 
+## v0.16 私有服务验收（2026-09-14）
+
+- PostgreSQL 集成测试覆盖两家组织隔离、同名工作空间、owner/viewer 写权限、令牌撤销、快照幂等和审计；服务相关 6 项测试通过，完整发现共 99 项测试通过，其中无数据库环境时跳过 2 项集成测试。
+- Docker Compose 从空卷启动，`/healthz` 返回数据库可用；通过 CLI 显式发布仓库内真实 GitHub 同步演示快照，首次创建后再次发布返回同一快照和 `created=false`。
+- 删除测试数据库卷后，从 `pg_dump` 备份恢复并重启服务，取回原快照 ID `e4775054-5173-4012-94f4-e98ef70fdc49` 与指纹 `ccd98c89fa4aef540b08622b4a5a652c86c565d445eec0082f0fe9744b0821f3`，其中 CI 为 `PASSING`。
+- 数据库检查确认明文引导令牌匹配数为 0；持久化项目不含输入中额外添加的 `diff` 或 `body` 字段。
+
+这些是本机合成组织和公开仓库快照的产品验收证据，不是外部客户生产验收、付费或效率收益证据。独立远端环境证据以本版本 GitHub Actions 的 PostgreSQL job 结果为准。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -25,7 +34,7 @@
 | 开发者受控合并 | PR 实际合并；合并请求绑定当时 head SHA | merge commit `2a1236f9533ba4c5ff1290865617589ffc255ab0` |
 | 合并后 main CI | Python 3.11/3.13 通过 | [运行 34753866731](https://github.com/guannan1031/yanxu-dev/actions/runs/34753866731) |
 
-合并动作由开发者执行，**不是 Yanxu 产品的自动合并功能**。Yanxu 当前只读。没有进行生产部署或业务验收。
+合并动作由开发者执行，**不是 Yanxu 产品的自动合并功能**。私有 API 只保存用户显式发布的标准化证据；没有进行生产部署或业务验收。
 
 ## 单次观测数据
 
@@ -50,8 +59,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI PR/CI 诊断工具（个人项目，v0.1）**  
-> 设计并实现基于 GitHub API 与 Codex CLI 的研发交付审查工具，完成 PR 差异、CI 状态及失败日志的上下文汇总、结构化 AI 诊断、HTML/JSON 报告与提交版本过期核验；通过公开合成 PR 验证“CI 失败—AI 定位—人工修复—PR CI 通过—合并后 CI 通过”流程，单次报告生成约 37 秒。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.16）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；新增 FastAPI + PostgreSQL 私有团队服务，支持组织隔离、owner/viewer、哈希令牌、幂等快照、审计与 Docker 部署。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织访问控制和数据库备份恢复测试。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 
