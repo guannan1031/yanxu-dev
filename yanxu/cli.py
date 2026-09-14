@@ -17,6 +17,7 @@ from .benchmark import load_and_analyze, render_html as render_benchmark_html, r
 from .measure import record_observation
 from .doctor import inspect_repo, write_report as write_doctor_report
 from .workflow import run_workflow
+from .draft_pr import publish_draft_pr
 
 
 def write_json(path: Path, value):
@@ -81,6 +82,17 @@ def main(argv=None):
     workflow.add_argument("--pr", type=int, help="Open pull request number; requires --github-repo")
     workflow.add_argument("--include-failed-logs", action="store_true")
     workflow.add_argument("--output", type=Path, default=Path("runs/workflow"))
+    draft = sub.add_parser("draft-pr", help="Plan or explicitly publish the current branch as a GitHub Draft PR")
+    draft.add_argument("--repo", type=Path, default=Path("."))
+    draft.add_argument("--github-repo", required=True)
+    draft.add_argument("--base", default="main")
+    draft.add_argument("--head", required=True)
+    draft.add_argument("--allow-path", action="append", required=True)
+    draft.add_argument("--title", required=True)
+    draft.add_argument("--body-file", type=Path, required=True)
+    draft.add_argument("--output", type=Path, default=Path("runs/draft-pr"))
+    draft.add_argument("--confirm-create", action="store_true",
+                       help="Push the current branch and create a Draft PR after all planning checks pass")
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -130,6 +142,12 @@ def main(argv=None):
                                   args.include_failed_logs)
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result["status"] != "BLOCKED" else 2
+        if args.command == "draft-pr":
+            folder = args.output.resolve() / (time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8])
+            result = publish_draft_pr(args.repo, args.github_repo, args.base, args.head, args.allow_path,
+                                      args.title, args.body_file, folder, args.confirm_create)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.command == "verify":
             saved = json.loads(args.evidence.read_text(encoding="utf-8"))["snapshot"]
             if binding(saved) != saved["binding"]:
