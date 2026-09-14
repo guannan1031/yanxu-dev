@@ -17,6 +17,15 @@
 
 这些是本机合成组织和公开仓库快照的产品验收证据，不是外部客户生产验收、付费或效率收益证据。独立远端环境证据以本版本 GitHub Actions 的 PostgreSQL job 结果为准。
 
+## v0.16.1 GitHub 事件验收（2026-09-14）
+
+- 完整测试共 105 项通过；新增测试使用 GitHub 官方 HMAC-SHA256 向量，并覆盖错误签名、字段白名单、delivery 去重、组织隔离、Worker 和安装撤权。
+- Docker Compose 同时运行 `app`、`db`、`worker`。合成 PR delivery 首先返回 `PENDING`，后台 Worker 随后写为 `COMPLETED`，`attempt_count=1`。
+- Docker 实测 delivery `smoke-b7d68ae9e6764388b37109ad650a5a5a` 绑定公开仓库 `guannan1031/yanxu-dev` 和 PR #16；持久化事实不含输入中的 PR 标题或正文。
+- GitHub installation 的 `suspend/deleted` 事件会立即改为 `REVOKED`；后续事件标为 `IGNORED_REVOKED`，不进入 Worker。
+
+上述 delivery 是本机按 GitHub 协议构造的合成请求。真实公网 GitHub App 注册、HTTPS Webhook 送达和客户仓库验收仍待试点配置，不能写成已线上联调。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -59,8 +68,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.16）**
-> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；新增 FastAPI + PostgreSQL 私有团队服务，支持组织隔离、owner/viewer、哈希令牌、幂等快照、审计与 Docker 部署。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织访问控制和数据库备份恢复测试。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.16.1）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、幂等快照、审计与 Docker 部署；新增 GitHub Webhook HMAC 校验、installation 组织绑定、delivery 去重、异步 Worker 和撤权处理。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织访问控制、数据库备份恢复和合成 Webhook 验收。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 

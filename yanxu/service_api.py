@@ -9,9 +9,10 @@ from .service import (AuthenticationError, AuthorizationError, ConflictError,
                       ValidationError)
 
 
-def create_app(database_url: str | None = None, bootstrap: dict | None = None):
+def create_app(database_url: str | None = None, bootstrap: dict | None = None,
+               github_webhook_secret: str | None = None):
     try:
-        from fastapi import Depends, FastAPI, HTTPException, Query, status
+        from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, status
         from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
         from pydantic import BaseModel, ConfigDict, Field
     except ImportError as exc:
@@ -19,6 +20,9 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
 
     database_url = database_url or os.environ.get("YANXU_DATABASE_URL", "")
     store = PostgresStore(database_url)
+    from .github_events import GitHubEventStore
+    github_store = GitHubEventStore(database_url)
+    github_webhook_secret = github_webhook_secret or os.environ.get("YANXU_GITHUB_WEBHOOK_SECRET")
     if bootstrap is None:
         values = {
             "slug": os.environ.get("YANXU_BOOTSTRAP_ORG_SLUG"),
@@ -30,6 +34,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
     @asynccontextmanager
     async def lifespan(app):
         store.initialize()
+        github_store.initialize()
         if bootstrap:
             store.bootstrap(bootstrap["slug"], bootstrap["name"], bootstrap["token"])
         app.state.store = store
@@ -37,7 +42,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.16.0",
+        version="0.16.1",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
@@ -51,6 +56,11 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
         model_config = ConfigDict(extra="forbid")
         label: str = Field(min_length=1, max_length=120)
         role: str
+
+    class InstallationInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        github_installation_id: int = Field(gt=0)
+        account_login: str = Field(min_length=1, max_length=120)
 
     def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
         if credentials is None or credentials.scheme.lower() != "bearer":
@@ -76,6 +86,8 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except ValidationError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
 
     @app.get("/healthz")
     def healthz():
@@ -122,6 +134,36 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None):
     @app.get("/v1/audit")
     def audit(current: Annotated[Principal, Depends(principal)], limit: int = Query(100, ge=1, le=200)):
         return {"items": store.list_audit(current, limit)}
+
+    @app.post("/v1/github/installations", status_code=201)
+    def register_installation(body: InstallationInput,
+                              current: Annotated[Principal, Depends(owner)]):
+        return call(github_store.register_installation, current, body.github_installation_id,
+                    body.account_login)
+
+    @app.get("/v1/github/installations")
+    def installations(current: Annotated[Principal, Depends(principal)]):
+        return {"items": github_store.list_installations(current)}
+
+    @app.get("/v1/github/deliveries")
+    def deliveries(current: Annotated[Principal, Depends(principal)],
+                   limit: int = Query(100, ge=1, le=200)):
+        return {"items": github_store.list_deliveries(current, limit)}
+
+    @app.post("/webhooks/github", status_code=202)
+    async def github_webhook(
+        request: Request,
+        x_hub_signature_256: Annotated[str | None, Header()] = None,
+        x_github_delivery: Annotated[str | None, Header()] = None,
+        x_github_event: Annotated[str | None, Header()] = None,
+    ):
+        if not github_webhook_secret:
+            raise HTTPException(status_code=503, detail="GitHub webhook is not configured")
+        if not x_github_delivery or not x_github_event:
+            raise HTTPException(status_code=422, detail="GitHub delivery headers are required")
+        body = await request.body()
+        return call(github_store.receive, github_webhook_secret, x_hub_signature_256,
+                    x_github_delivery, x_github_event, body)
 
     return app
 
