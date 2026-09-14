@@ -57,6 +57,8 @@
 
 该验证覆盖单机 Docker Compose 的逻辑备份和恢复，不构成外部客户灾备演练、RTO/RPO 或跨云恢复承诺。
 
+公开证据：[v0.18.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.18.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34905649576) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34905648459)。Release 验证 JSON SHA-256 为 `a4c93a4f5f4abfd57e7971db3f26f1aaffe1d7a35120c3140b2fe847403bd63c`；私有数据库 dump 未上传公开 Release。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
