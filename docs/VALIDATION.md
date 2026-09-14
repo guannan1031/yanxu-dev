@@ -59,6 +59,15 @@
 
 公开证据：[v0.18.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.18.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34905649576) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34905648459)。Release 验证 JSON SHA-256 为 `a4c93a4f5f4abfd57e7971db3f26f1aaffe1d7a35120c3140b2fe847403bd63c`；私有数据库 dump 未上传公开 Release。
 
+## v0.19.0 私有试点初始化验收（2026-09-15）
+
+- `pilot init` 生成三个 43 字符随机私密值，输出不含这些值；`.env` 在 POSIX 本机权限为 `0600`，再次初始化拒绝覆盖。
+- `pilot doctor` 的 11 项检查覆盖文件、必填键、占位符、私密值长度、slug、端口、Cookie、Docker、Compose 和配置展开；真实检查全部 `PASS`，报告不含任一私密值。
+- 使用生成的 `.env` 从空 PostgreSQL 卷构建 app/db/worker。`/healthz` 返回数据库可用，OpenAPI 版本为 `0.19.0`。
+- 生成的组织 Token 成功换取 HttpOnly 浏览器会话并进入 `onboarding-demo` 工作台；登录响应和页面未回显 Token。验证后删除合成容器、网络、卷和本地 `.env`。
+
+该验证说明本机冷启动路径可运行，不代表客户的 HTTPS、网络策略、GitHub App 权限或外部 UAT 已通过。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -101,8 +110,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.18.0）**
-> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台可记录分币种实际成本并导出带 SHA-256 manifest 的试点包，跨平台运维命令支持数据库备份、篡改校验和单事务恢复。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、真实 Chromium 和 Docker 恢复验收。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.19.0）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台记录分币种成本并导出带 SHA-256 manifest 的试点包。跨平台初始化生成不回显的随机私密配置和 11 项脱敏预检，运维命令支持数据库备份、篡改校验和单事务恢复。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、真实 Chromium、空卷安装和 Docker 恢复验收。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 

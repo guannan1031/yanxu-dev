@@ -163,6 +163,16 @@ def main(argv=None):
     ops_restore.add_argument("backup", type=Path)
     ops_restore.add_argument("--compose-dir", type=Path, default=Path("."))
     ops_restore.add_argument("--confirm-restore", action="store_true")
+    pilot = sub.add_parser("pilot", help="Initialize and validate a self-hosted private pilot")
+    pilot_sub = pilot.add_subparsers(dest="pilot_command", required=True)
+    pilot_init = pilot_sub.add_parser("init", help="Create a non-overwriting .env with random private values")
+    pilot_init.add_argument("--compose-dir", type=Path, default=Path("."))
+    pilot_init.add_argument("--org-slug", required=True)
+    pilot_init.add_argument("--org-name", required=True)
+    pilot_init.add_argument("--port", type=int, default=8080)
+    pilot_doctor = pilot_sub.add_parser("doctor", help="Write a redacted Docker Compose preflight report")
+    pilot_doctor.add_argument("--compose-dir", type=Path, default=Path("."))
+    pilot_doctor.add_argument("--output", type=Path, default=Path("runs/pilot-doctor.json"))
     serve = sub.add_parser("serve", help="Run the optional private PostgreSQL team service")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8080)
@@ -171,6 +181,14 @@ def main(argv=None):
     worker.add_argument("--interval", type=float, default=2.0)
     args = parser.parse_args(argv)
     try:
+        if args.command == "pilot":
+            from .pilot_setup import initialize_pilot, inspect_pilot
+            if args.pilot_command == "init":
+                result = initialize_pilot(args.compose_dir, args.org_slug, args.org_name, args.port)
+            else:
+                result = inspect_pilot(args.compose_dir, args.output)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0 if result["status"] in {"INITIALIZED", "READY"} else 2
         if args.command == "ops":
             from .operations import backup_service, restore_service
             if args.ops_command == "backup":

@@ -1,6 +1,6 @@
 # 私有团队服务 Alpha
 
-Yanxu Dev v0.18.0 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件和客户录入的实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、成本和审计记录，运维人员使用统一命令备份和恢复。
+Yanxu Dev v0.19.0 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件和客户录入的实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、成本和审计记录，运维人员使用统一命令初始化、预检、备份和恢复。
 
 ## 当前闭环
 
@@ -31,11 +31,11 @@ flowchart LR
 
 ## Docker Compose 启动
 
-需要 Docker Desktop（Windows/macOS）或 Docker Engine + Compose（Linux）。先复制环境模板；`.env` 已被 Git 忽略，不能提交真实密码或令牌。
+需要 Docker Desktop（Windows/macOS）或 Docker Engine + Compose（Linux）。推荐用初始化命令生成随机私密值；`.env` 已被 Git 忽略，不能提交真实密码或令牌。
 
 ```bash
-cp .env.example .env
-# 编辑 .env，将四个 replace-with... 值替换为本机随机值
+python -m yanxu pilot init --org-slug example-team --org-name "Example Team"
+python -m yanxu pilot doctor --output runs/pilot-doctor.json
 docker compose up -d --build
 docker compose ps
 curl http://127.0.0.1:8080/healthz
@@ -44,12 +44,14 @@ curl http://127.0.0.1:8080/healthz
 Windows PowerShell：
 
 ```powershell
-Copy-Item .env.example .env
-# 用记事本编辑 .env，填入随机数据库密码、至少 24 字符令牌和 Webhook secret
+python -m yanxu pilot init --org-slug example-team --org-name "Example Team"
+python -m yanxu pilot doctor --output runs\pilot-doctor.json
 docker compose up -d --build
 docker compose ps
 Invoke-RestMethod http://127.0.0.1:8080/healthz
 ```
+
+字段、退出码和不回显边界见[私有试点初始化与预检](PILOT_ONBOARDING.md)。
 
 端口默认只绑定 `127.0.0.1`。内网开放前应在 HTTPS 反向代理后部署，并配置防火墙；客户端会拒绝向非本机 HTTP 地址发送令牌。
 

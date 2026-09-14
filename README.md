@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.18.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态、实际成本和审计证据，导出试点 ZIP，并通过跨平台命令备份、校验和恢复 PostgreSQL。
+v0.19.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态、实际成本和审计证据，导出试点 ZIP，通过跨平台命令初始化、检查、备份和恢复私有部署。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -45,6 +45,8 @@ v0.17 新增：[私有团队工作台](docs/PILOT_DASHBOARD.md)。组织 Token �
 v0.17.1 新增：[实际成本与试点证据包](docs/PILOT_COSTS.md)。owner 可按账单或工时记录模型、CI、基础设施和支持成本；金额使用整数微单位精确保存，按币种分别汇总。试点 ZIP 包含摘要、成本、审计和带文件哈希的 manifest，并明确标记提效结论尚未测量。
 
 v0.18 新增：[备份、恢复与升级手册](docs/UPGRADE_AND_RECOVERY.md)。`ops backup` 从 Docker Compose PostgreSQL 创建自定义归档和 SHA-256 manifest；`ops restore` 在显式确认、文件哈希和归档结构校验通过后，以单事务恢复并重启 app/worker。
+
+v0.19 新增：[私有试点初始化与预检](docs/PILOT_ONBOARDING.md)。`pilot init` 生成不回显的随机数据库密码、组织 Token 和 Webhook secret，并拒绝覆盖已有 `.env`；`pilot doctor` 脱敏检查必填项、占位符、长度、端口、Docker 与 Compose 配置。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -117,9 +119,11 @@ python -m yanxu team sync-github .yanxu/team-workspace.json --output runs/team-g
 python -m yanxu team board .yanxu/team-workspace.json --output runs/team-board.html
 python -m yanxu team export .yanxu/team-workspace.json --github-snapshot runs/team-github/TIMESTAMP/team-github.json --output runs/yanxu-pilot-evidence.zip
 
-# 可选私有服务：完整部署、鉴权和备份命令见 docs/PRIVATE_SERVICE.md
+# 可选私有服务：先生成本地私密配置并做脱敏预检
 pip install -e '.[server]'
-python -m yanxu serve
+python -m yanxu pilot init --org-slug example-team --org-name "Example Team"
+python -m yanxu pilot doctor --output runs/pilot-doctor.json
+docker compose up -d --build
 # 浏览器打开 http://127.0.0.1:8080/login
 python -m yanxu team publish-snapshot runs/team-github/TIMESTAMP/team-github.json \
   --server http://127.0.0.1:8080 --workspace-id WORKSPACE_UUID
@@ -174,6 +178,7 @@ python -m yanxu draft-pr --repo . --github-repo owner/repo --base main --head fe
 | 私有团队工作台 | 组织 Token 换取短期 HttpOnly 会话；读取本组织服务状态 | 接入进度、工作空间、PR/CI、Webhook 与审计网页；组织级审计 JSON 带可复算指纹 |
 | 成本与试点验收包 | owner 录入账单或工时金额、币种和证据引用 | 按币种/类型汇总实际成本；ZIP 含摘要、成本、审计和 manifest 哈希，未测量提效时明确标记 `NOT_MEASURED` |
 | 私有服务备份与恢复 | Docker Compose 项目和明确输出路径 | PostgreSQL 自定义归档、SHA-256 manifest；恢复前校验，单事务替换并重启 app/worker |
+| 私有试点初始化 | 组织 slug、名称、端口和 Docker Compose 目录 | 非覆盖 `.env`、随机私密值、脱敏 preflight JSON；Docker/Compose 配置通过才返回 `READY` |
 | 本项目 CI | `pull_request` 和 `push` 到 main | Linux Python 3.11/3.13 与 Windows Python 3.11 的独立契约及回归测试 |
 | Windows 交接自检 | Python、Git、项目入口、测试与可选 gh/Codex CLI | PowerShell 明确输出每项通过、警告或失败；GitHub Windows Runner 执行同一脚本 |
 
