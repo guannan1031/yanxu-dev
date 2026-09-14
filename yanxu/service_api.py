@@ -6,7 +6,7 @@ from typing import Annotated, Any
 
 from .service import (AuthenticationError, AuthorizationError, ConflictError,
                       NotFoundError, PostgresStore, Principal, ServiceError,
-                      ValidationError)
+                      ValidationError, parse_cost_amount)
 
 
 def create_app(database_url: str | None = None, bootstrap: dict | None = None,
@@ -48,7 +48,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.17.0",
+        version="0.17.1",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
@@ -71,6 +71,13 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
     class SessionInput(BaseModel):
         model_config = ConfigDict(extra="forbid")
         token: str = Field(min_length=24, max_length=512)
+
+    class CostInput(BaseModel):
+        model_config = ConfigDict(extra="forbid")
+        category: str
+        amount: str
+        currency: str
+        evidence_ref: str = Field(min_length=1, max_length=500)
 
     def principal(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> Principal:
         if credentials is None or credentials.scheme.lower() != "bearer":
@@ -106,7 +113,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
     def html_response(content: str, status_code: int = 200):
         return HTMLResponse(content, status_code=status_code, headers={
             "Cache-Control": "no-store",
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; "
+            "Content-Security-Policy": "default-src 'none'; connect-src 'self'; style-src 'unsafe-inline'; "
                                        "script-src 'unsafe-inline'; img-src data:; form-action 'self'; "
                                        "base-uri 'none'; frame-ancestors 'none'",
             "Referrer-Policy": "no-referrer",
@@ -161,6 +168,41 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
         return Response(content=body, media_type="application/json", headers={
             "Cache-Control": "no-store",
             "Content-Disposition": f'attachment; filename="yanxu-audit-{current.organization_slug}.json"',
+            "X-Yanxu-Evidence-Fingerprint": fingerprint,
+        })
+
+    @app.get("/v1/costs")
+    def costs(request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        response.headers["Cache-Control"] = "no-store"
+        return {"items": store.list_cost_records(current), "summary": store.summarize_costs(current)}
+
+    @app.post("/v1/costs", status_code=201)
+    def create_cost(body: CostInput, request: Request, response: Response):
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        amount_micros = call(parse_cost_amount, body.amount)
+        result = call(store.create_cost_record, current, body.category, amount_micros,
+                      body.currency, body.evidence_ref)
+        response.headers["Cache-Control"] = "no-store"
+        return result
+
+    @app.get("/v1/pilot/export")
+    def pilot_export(request: Request):
+        from .pilot_dashboard import build_pilot_bundle
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        body, fingerprint = build_pilot_bundle(store, github_store, current)
+        return Response(content=body, media_type="application/zip", headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": f'attachment; filename="yanxu-pilot-{current.organization_slug}.zip"',
             "X-Yanxu-Evidence-Fingerprint": fingerprint,
         })
 

@@ -1,6 +1,6 @@
 # 功能验证与简历证据
 
-日期：2026-09-13。用途：说明实际完成了什么，以及哪些效果尚未测量。
+日期：2026-09-15。用途：说明实际完成了什么，以及哪些效果尚未测量。
 
 ## v0.15 当前状态（2026-09-14）
 
@@ -34,6 +34,17 @@
 - 审计导出只返回当前组织事件；响应头与 JSON 的 `fingerprint` 一致，并可按文档规则重新计算。页面与导出均不含源码、diff、PR 正文、日志或明文 Token。
 
 截图见[私有团队工作台](PILOT_DASHBOARD.md)。这是本机私有服务的产品验收，不是外部团队 UAT、付费或效率收益证据。
+
+## v0.17.1 实际成本与试点包验收（2026-09-15）
+
+- 完整测试共 110 项通过。新增覆盖十进制金额精确解析、6 位小数上限、owner/viewer 写权限、跨组织隔离、分币种/类型汇总、成本审计和 ZIP 合同。
+- `12.50` 在 PostgreSQL 保存为 `12500000` 微单位并规范化显示为 `12.5`；不同币种保持独立，没有隐含汇率换算或 Token 计价。
+- Playwright 在真实 Chromium 中通过页面录入 `CNY 7.250001` 的合成支持成本；刷新后成本数和审计同步增加，控制台 0 错误。
+- 浏览器成功下载试点 ZIP。压缩包只含 `summary.json`、`costs.json`、`audit.json` 和 `manifest.json`；测试逐项复算文件哈希与 manifest 指纹。
+- Docker Compose 用 v0.17.1 镜像重建 app/worker 后健康检查通过；写入 `USD 4.125` 合成基础设施成本，重启 app/worker 后仍取回 `4125000` 微单位和同一证据引用。
+- manifest 明确写入 `efficiency_claim_status=NOT_MEASURED`，不会因已有成本或 CI 通过而自动生成提效比例。
+
+截图见[成本与试点证据包](PILOT_COSTS.md)。这些成本、组织和事件均为本地合成验收数据，不是客户账单、生产用量、外部 UAT 或商业收入。
 
 ## 真实集成记录
 
@@ -77,8 +88,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.16.1）**
-> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、幂等快照、审计与 Docker 部署；新增 GitHub Webhook HMAC 校验、installation 组织绑定、delivery 去重、异步 Worker 和撤权处理。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织访问控制、数据库备份恢复和合成 Webhook 验收。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.17.1）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、幂等快照、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台可记录分币种实际成本，并导出带 SHA-256 manifest 的试点验收包。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、数据库恢复、合成 Webhook 和真实 Chromium 验收。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 
