@@ -21,7 +21,8 @@ from .draft_pr import publish_draft_pr
 from .implement import run_implementation
 from .board import build_board, render_html as render_board_html
 from .policy import create_policy, load_policy
-from .team import add_project, build_team_board, create_workspace, render_html as render_team_html, write_workspace
+from .team import (add_project, build_team_board, create_workspace, export_team_bundle,
+                   render_html as render_team_html, write_workspace)
 
 
 def write_json(path: Path, value):
@@ -128,9 +129,13 @@ def main(argv=None):
     team_add.add_argument("--id", required=True)
     team_add.add_argument("--runs", type=Path, required=True)
     team_add.add_argument("--measurements", type=Path)
+    team_add.add_argument("--policy", type=Path, help="Optional validated team policy for this project")
     team_board = team_sub.add_parser("board", help="Generate a local multi-project team board")
     team_board.add_argument("workspace", type=Path)
     team_board.add_argument("--output", type=Path, default=Path("runs/team-board.html"))
+    team_export = team_sub.add_parser("export", help="Create a sanitized pilot evidence ZIP")
+    team_export.add_argument("workspace", type=Path)
+    team_export.add_argument("--output", type=Path, default=Path("runs/yanxu-pilot-evidence.zip"))
     args = parser.parse_args(argv)
     try:
         if args.command == "prepare-fix":
@@ -222,8 +227,11 @@ def main(argv=None):
                 print(json.dumps({"workspace": str(args.output.resolve()), "name": workspace["name"]}, ensure_ascii=False, indent=2))
                 return 0
             if args.team_command == "add-project":
-                workspace = add_project(args.workspace, args.id, args.runs, args.measurements)
+                workspace = add_project(args.workspace, args.id, args.runs, args.measurements, args.policy)
                 print(json.dumps({"workspace": str(args.workspace.resolve()), "projects": len(workspace["projects"])}, ensure_ascii=False, indent=2))
+                return 0
+            if args.team_command == "export":
+                print(json.dumps(export_team_bundle(args.workspace, args.output), ensure_ascii=False, indent=2))
                 return 0
             team_result = build_team_board(args.workspace)
             output = args.output.resolve()
