@@ -48,6 +48,15 @@
 
 公开证据：[v0.17.1 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.17.1) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34904575884) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34904574988)。Release JSON SHA-256 为 `f1d3c603289b08177b891d1fcef626768b345bad74d557c2ac22ce4ff3666b6d`，截图 SHA-256 为 `0ff5f7d486d324456b0ef51d65103f37def1d39e0ef2625e2df246e39cc6aea1`。
 
+## v0.18.0 备份与恢复验收（2026-09-15）
+
+- `ops backup` 通过 Docker Compose 在 PostgreSQL 容器内生成自定义归档，复制到明确的本地路径后计算 SHA-256 并生成 manifest；已存在输出时拒绝覆盖。
+- `ops restore` 在任何停服动作前核对文件名、字节数、SHA-256 和 `pg_restore --list`；缺少 `--confirm-restore` 或文件被改动时拒绝。
+- 恢复使用 `--clean --if-exists --single-transaction`。自动化测试模拟恢复失败并验证 app/worker 仍被重新启动。
+- 真实 Docker 合成环境生成 25,651 字节归档，SHA-256 为 `47b43a6e035d57db65d04eaac520758b3923b6f26f98c858b9ca56c28c6d8d99`。备份后成本记录由 1 条增至 2 条；恢复并重启后回到 1 条，原金额仍为 `4125000` 微单位。
+
+该验证覆盖单机 Docker Compose 的逻辑备份和恢复，不构成外部客户灾备演练、RTO/RPO 或跨云恢复承诺。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -90,8 +99,8 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.17.1）**
-> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、幂等快照、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台可记录分币种实际成本，并导出带 SHA-256 manifest 的试点验收包。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、数据库恢复、合成 Webhook 和真实 Chromium 验收。源码：https://github.com/guannan1031/yanxu-dev
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v0.18.0）**
+> 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、哈希令牌、审计、GitHub Webhook 队列与 Docker 部署；浏览器工作台可记录分币种实际成本并导出带 SHA-256 manifest 的试点包，跨平台运维命令支持数据库备份、篡改校验和单事务恢复。公开 PR 验证 CI 失败到修复闭环；私有服务完成跨组织、真实 Chromium 和 Docker 恢复验收。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
 

@@ -48,7 +48,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.17.1",
+        version="0.18.0",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
