@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v0.13 是可运行的命令行工具：`implement` 根据任务合同和团队 Policy 生成受控补丁，在不可变 HEAD 归档中自动测试，并交给人工审查；`workflow` 串联项目体检、需求合同和 PR 证据，`draft-pr` 在精确范围检查和显式确认后推送功能分支、创建 Draft PR，`team` 汇总多个授权项目的本地交付证据。
+v0.14 是可运行的命令行工具：`implement` 根据任务合同和团队 Policy 生成受控补丁，在不可变 HEAD 归档中自动测试，并交给人工审查；`workflow` 串联项目体检、需求合同和 PR 证据，`draft-pr` 在精确范围检查和显式确认后推送功能分支、创建 Draft PR，`team` 汇总多个授权项目并导出脱敏试点证据包。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -31,6 +31,8 @@ v0.11 新增：[`board` 本地交付证据看板](docs/TEAM_BOARD.md)。它只�
 v0.12 新增：[`policy` 团队规则包](docs/TEAM_POLICY.md)。技术负责人可固定允许 AI 修改的路径和批准测试命令；受控实现发现路径或测试漂移时在模型调用前拒绝，并把规则指纹写入交付证据。
 
 v0.13 新增：[`team` 私有团队工作空间 Alpha](docs/TEAM_WORKSPACE.md)。负责人登记多个已授权项目的运行产物，生成跨项目交付看板；它不读取源码、不上传、不写 GitHub，也不将不同项目的提效百分比相加。
+
+v0.14 新增：`team export` 生成可离线移交的试点证据 ZIP，包含团队看板、Policy 指纹、manifest 和文件哈希；不复制业务源码、原始运行产物、凭据或登记的本地绝对路径。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
@@ -99,6 +101,7 @@ python -m yanxu policy --name "orders-service" --allow-path src/example.py --com
 python -m yanxu team init --name "Platform Team" --output .yanxu/team-workspace.json
 python -m yanxu team add-project .yanxu/team-workspace.json --id orders-service --runs /path/to/orders-service/runs
 python -m yanxu team board .yanxu/team-workspace.json --output runs/team-board.html
+python -m yanxu team export .yanxu/team-workspace.json --output runs/yanxu-pilot-evidence.zip
 
 # 开发前检查仓库是否具备受约束 AI Coding 的基本条件
 python -m yanxu doctor --repo . --output runs/doctor

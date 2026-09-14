@@ -9,10 +9,15 @@ python -m yanxu team init --name "Platform Team" --output .yanxu/team-workspace.
 # 2. 为每个已授权项目登记本地交付产物
 python -m yanxu team add-project .yanxu/team-workspace.json \
   --id orders-service --runs /path/to/orders-service/runs \
-  --measurements /path/to/orders-service/runs/observed.json
+  --measurements /path/to/orders-service/runs/observed.json \
+  --policy /path/to/orders-service/.yanxu/team-policy.json
 
 # 3. 导出跨项目团队交付看板
 python -m yanxu team board .yanxu/team-workspace.json --output runs/team-board.html
+
+# 4. 生成可交给试点客户离线验收的脱敏证据包
+python -m yanxu team export .yanxu/team-workspace.json \
+  --output runs/yanxu-pilot-evidence.zip
 ```
 
 ## 输入、输出与验收
@@ -20,11 +25,13 @@ python -m yanxu team board .yanxu/team-workspace.json --output runs/team-board.h
 | 项目 | 说明 |
 | --- | --- |
 | 输入 | 团队工作空间 JSON；每个项目显式登记的运行目录和可选测量文件 |
-| 输出 | `team-board.html`、`team-board.json` |
-| 显示 | 项目可用性、运行数、隔离测试、待人工复核、项目级测量状态 |
+| 输出 | `team-board.html`、`team-board.json`；可选脱敏 ZIP 证据包 |
+| 显示 | 项目可用性、Policy 状态和指纹、运行数、隔离测试、待人工复核、项目级测量状态 |
 | 不做 | 不聚合不同项目的提效百分比；不读取源码；不上传；不写 GitHub |
 
 项目目录失效时，看板将该项目标为 `UNAVAILABLE`，但保留其他项目的结果。
+
+证据包只包含标准化后的团队看板、manifest、文件哈希和阅读说明，不复制原始运行产物、业务源码、凭据或工作空间中登记的本地绝对路径。已有 ZIP 默认拒绝覆盖，便于保留每次验收的独立证据。
 
 ## 商业定位
 
