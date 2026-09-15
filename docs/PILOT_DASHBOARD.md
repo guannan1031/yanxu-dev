@@ -1,6 +1,6 @@
 # 私有团队工作台
 
-Yanxu Dev v0.20.0 的私有团队服务提供可直接操作的浏览器入口。它服务于技术负责人和 Reviewer，把分散的工作空间、PR/CI 快照、GitHub Webhook、试点验收、支持投入、实际成本与审计记录集中到一个组织隔离页面。
+Yanxu Dev v1.0.0 候选版的私有团队服务提供可直接操作的浏览器入口。它服务于技术负责人和 Reviewer，把分散的工作空间、PR/CI 快照、GitHub Webhook、试点验收、支持投入、实际成本与审计记录集中到一个组织隔离页面。
 
 ![研序团队工作台成本页](assets/v0171-pilot-costs.png)
 
@@ -52,7 +52,7 @@ YANXU_SECURE_COOKIES=true
 
 下载 JSON 的 `fingerprint` 是对移除该字段后、按键排序并使用紧凑分隔符编码的 UTF-8 JSON 计算 SHA-256。响应头 `X-Yanxu-Evidence-Fingerprint` 返回同一值。该指纹用于检测导出内容变化，不是数字签名。
 
-成本记录与试点 ZIP 的字段、精度、权限和收益声明边界见[实际成本与试点证据包](PILOT_COSTS.md)，验收与支持字段见[试点验收与支持证据](PILOT_ACCEPTANCE.md)。
+成本记录与试点 ZIP 的字段、精度、权限和收益声明边界见[实际成本与试点证据包](PILOT_COSTS.md)，验收与支持字段见[试点验收与支持证据](PILOT_ACCEPTANCE.md)。页头“验收报告”可生成带 SHA-256 指纹、签字栏和 `NOT_MEASURED` 边界的打印页面。
 
 ## 验收结果与边界
 
