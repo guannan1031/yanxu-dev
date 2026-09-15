@@ -21,6 +21,8 @@ PATCH = """diff --git a/sample/value.py b/sample/value.py
 +    return 1
 """
 
+MALFORMED_PATCH = PATCH.replace("@@ -1,2 +1,2 @@", "@@ -1,2 +1,4 @@")
+
 
 class ControlledImplementationTests(unittest.TestCase):
     def setUp(self):
@@ -99,6 +101,31 @@ class ControlledImplementationTests(unittest.TestCase):
         self.assertEqual(result["model"]["attempt_count"], 2)
         self.assertEqual(len(result["model"]["rejected_attempts"]), 1)
         self.assertEqual(mocked.call_count, 2)
+
+    def test_malformed_hunk_is_retried_before_isolated_tests(self):
+        answers = [self.model(MALFORMED_PATCH), self.model(PATCH)]
+        with patch("yanxu.implement.generate_patch", side_effect=answers) as mocked:
+            result = run_implementation(
+                self.contract, self.repo, ["sample/value.py"],
+                [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+                self.root / "runs", timeout=10,
+            )
+        self.assertEqual(result["status"], "READY_FOR_HUMAN_REVIEW")
+        self.assertEqual(result["model"]["attempt_count"], 2)
+        self.assertIn("malformed", result["model"]["rejected_attempts"][0])
+        self.assertEqual(mocked.call_count, 2)
+
+    def test_two_malformed_hunks_stop_without_running_tests(self):
+        with patch("yanxu.implement.generate_patch", return_value=self.model(MALFORMED_PATCH)) as mocked:
+            with self.assertRaisesRegex(ReviewError, "after 2 attempts"):
+                run_implementation(
+                    self.contract, self.repo, ["sample/value.py"],
+                    [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
+                    self.root / "runs", timeout=10,
+                )
+        self.assertEqual(mocked.call_count, 2)
+        self.assertEqual((self.repo / "sample/value.py").read_text(), "def value():\n    return 0\n")
+        self.assertFalse((self.root / "runs").exists())
 
     def test_failed_tests_are_recorded(self):
         result = self.execute(command=[sys.executable, "-c", "raise SystemExit(3)"])

@@ -31,6 +31,16 @@ class RepositoryDoctorTests(unittest.TestCase):
         self.assertEqual(result["source_files_scanned"], 0)
         self.assertFalse(result["remote_modified"])
 
+    def test_large_rules_and_readme_do_not_block_ready_repository(self):
+        self.make_ready()
+        (self.repo / "AGENTS.md").write_text("# Rules\n" + "x" * 21_000, encoding="utf-8")
+        (self.repo / "README.md").write_text("# Demo\n" + "y" * 21_000, encoding="utf-8")
+        result = inspect_repo(self.repo)
+        self.assertEqual(result["status"], "READY")
+        self.assertEqual(result["score"], 100)
+        self.assertNotIn("AGENTS.md", result["context_files"])
+        self.assertNotIn("README.md", result["context_files"])
+
     def test_empty_repository_has_actionable_blockers(self):
         result = inspect_repo(self.repo)
         self.assertEqual(result["status"], "NEEDS_WORK")
