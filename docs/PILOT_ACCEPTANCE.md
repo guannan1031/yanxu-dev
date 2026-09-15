@@ -1,12 +1,12 @@
 # 私有试点验收与支持证据
 
-Yanxu Dev v1.0.0 候选版面向 5–50 人研发团队的试点负责人、技术负责人和交付支持人员。它把售前约定、实际验收结果和支持投入放进组织隔离的工作台与证据包，帮助双方判断是否值得续费。
+Yanxu Dev v1.0.0 面向 5–50 人研发团队的试点负责人、技术负责人和交付支持人员。它把售前约定、实际验收结果和支持投入放进组织隔离的工作台与证据包，帮助双方判断是否值得续费。
 
 ![合成组织的试点验收与支持页面](assets/v020-pilot-acceptance.png)
 
 ![v1.0 合成组织的可打印验收报告](assets/v100-pilot-report.png)
 
-截图使用本地合成组织和演示证据引用，不代表真实客户验收。v1.0 的正式发布链接将在 Release 完成后补入。
+截图使用本地合成组织和演示证据引用，不代表真实客户验收。v1.0.0 公开证据：[Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726972) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726168)。
 
 公开证据：[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312749) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312232)。Release 验证 JSON SHA-256 为 `73e1ef1fbf58d586a30a202ae9790e77dd0fe7edc1c886b506e751f49d521a43`，跨平台 wheel 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`，截图为 `3762e9ac701f8b37b153d8cf5e8e87cd798e99025814c751b9970c5b7b789774`。
 

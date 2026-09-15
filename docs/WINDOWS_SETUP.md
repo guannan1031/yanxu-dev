@@ -64,7 +64,7 @@ python -m pip install -e .
 
 验收标准：脚本返回 `0 failure(s)`，完整测试通过，同时识别到 `gh` 与 `codex`。脚本只检查命令是否存在，不读取或输出登录凭据。
 
-只做安装体验时，也可以从 [v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) 下载 `yanxu_dev-0.20.0-py3-none-any.whl`；其 SHA-256 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`。继续开发、运行仓库测试或启动 Docker Compose 时仍使用上面的 clone 流程。
+只做安装体验时，也可以从 [v1.0.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) 下载 `yanxu_dev-1.0.0-py3-none-any.whl`；其 SHA-256 为 `d8b67da93f7de3989dbd63f0b0f8122761543efa0c8c4a6e1096759a8d9455ae`。继续开发、运行仓库测试或启动 Docker Compose 时仍使用上面的 clone 流程。
 
 ## 5. 生成第一个本地任务合同
 

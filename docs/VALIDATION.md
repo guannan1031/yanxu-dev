@@ -81,7 +81,7 @@
 
 公开证据：[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312749) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34908312232)。Release 验证 JSON SHA-256 为 `73e1ef1fbf58d586a30a202ae9790e77dd0fe7edc1c886b506e751f49d521a43`，wheel 为 `1caea10b6142d17395bab5801d20534ca6d4bc400239f239cc5ee6cc893165cb`。
 
-## v1.0.0 可打印验收报告（候选版，2026-09-15）
+## v1.0.0 可打印验收报告（2026-09-15）
 
 - `/v1/pilot/report` 从当前组织的验收项、客户确认记录、支持分钟和实际成本生成打印页面；同一份快照规范化后计算 SHA-256，并同时放入响应头和报告正文。
 - viewer 可以读取报告但不能修改试点记录；另一个组织看不到当前组织证据。动态标准与证据引用经过 HTML 转义，响应保持 CSP 和 `no-store`。
@@ -89,7 +89,7 @@
 - Docker Compose 从空卷启动 v1.0.0 app/db/worker；真实 Chromium 完成 Token 登录、进入工作台、录入合成验收/支持/成本并打开打印报告，控制台 0 错误。
 - 打印报告截图 SHA-256 为 `5cc093d6803f7663ba8f990cdf0a947dfd993d92a44bdf70977339f7b4a45f4a`。截图中的组织、证据、60 分钟和 CNY 28.5 均为合成验收数据。
 
-发布前状态仍是候选版。远端 Windows/Linux CI、GitHub Release、发布 wheel 哈希和主分支 Pages 链接必须在对应 PR 合并后补齐。该报告不是电子签名、付款证明、外部客户验收或提效百分比证明。
+公开证据：[v1.0.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) · [PR #29](https://github.com/guannan1031/yanxu-dev/pull/29) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726972) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726168)。从 GitHub 下载后复算：验证 JSON SHA-256 为 `fa83664ad15f815e3ef2c186be25b16ceffb89ddc1216827198f03513aabdce7`，wheel 为 `d8b67da93f7de3989dbd63f0b0f8122761543efa0c8c4a6e1096759a8d9455ae`，截图为 `5cc093d6803f7663ba8f990cdf0a947dfd993d92a44bdf70977339f7b4a45f4a`。该报告不是电子签名、付款证明、外部客户验收或提效百分比证明。
 
 ## 真实集成记录
 
@@ -133,7 +133,7 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v1.0.0 候选版）**
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v1.0.0）**
 > 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、审计、GitHub Webhook 队列与 Docker 部署。浏览器工作台记录验收标准、客户确认、支持投入和分币种成本，导出带 SHA-256 manifest 的试点包与可打印验收报告；跨平台命令支持脱敏安装预检、数据库备份、篡改校验和单事务恢复。系统明确区分内部通过、客户确认记录和外部签字；提效未完成配对测量时保持 `NOT_MEASURED`。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。

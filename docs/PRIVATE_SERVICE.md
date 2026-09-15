@@ -1,6 +1,6 @@
 # 私有团队服务
 
-Yanxu Dev v1.0.0 候选版把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件、试点验收、支持投入和实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、验收、支持、成本和审计记录，运维人员使用统一命令初始化、预检、备份和恢复。
+Yanxu Dev v1.0.0 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件、试点验收、支持投入和实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、验收、支持、成本和审计记录，运维人员使用统一命令初始化、预检、备份和恢复。
 
 ## 当前闭环
 

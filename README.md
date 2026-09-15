@@ -2,7 +2,7 @@
 
 **把 GitHub PR、CI 和 AI 诊断整理成一份与代码版本绑定的交付审查报告，并在隔离副本中验证修复。**
 
-v1.0.0 候选版是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态，记录验收标准、客户确认、支持投入和实际成本，导出试点证据 ZIP 与带 SHA-256 指纹的可打印验收报告，并通过跨平台命令初始化、检查、备份和恢复私有部署。
+v1.0.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成、隔离测试、PR/CI 核验和 GitHub Webhook 队列外，团队可以用浏览器查看跨项目状态，记录验收标准、客户确认、支持投入和实际成本，导出试点证据 ZIP 与带 SHA-256 指纹的可打印验收报告，并通过跨平台命令初始化、检查、备份和恢复私有部署。
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
@@ -50,7 +50,7 @@ v0.19 新增：[私有试点初始化与预检](docs/PILOT_ONBOARDING.md)。`pil
 
 v0.20 新增：[试点验收与支持证据](docs/PILOT_ACCEPTANCE.md)。owner 配置验收标准、记录 PASS/FAIL 证据与客户确认，并登记支持分钟；viewer 只读。导出的试点 ZIP 新增 `acceptance.json` 和 `support.json`，仍明确区分内部通过、客户确认记录和未测量提效。[v0.20.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v0.20.0) 提供跨平台 wheel、真实 Chromium 截图和脱敏验证 JSON。
 
-v1.0 新增：`/v1/pilot/report` 生成适合打印或另存 PDF 的试点验收报告，把验收、客户确认记录、支持分钟和实际成本绑定为可复算 SHA-256 指纹。配套[客户 UAT 与交接清单](docs/UAT_AND_HANDOVER.md)和[私有化试点服务包](docs/PILOT_OFFER.md)把代码能力封装为可报价、可验收的固定范围交付。
+v1.0 新增：`/v1/pilot/report` 生成适合打印或另存 PDF 的试点验收报告，把验收、客户确认记录、支持分钟和实际成本绑定为可复算 SHA-256 指纹。配套[客户 UAT 与交接清单](docs/UAT_AND_HANDOVER.md)和[私有化试点服务包](docs/PILOT_OFFER.md)把代码能力封装为可报价、可验收的固定范围交付。[v1.0.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) 提供跨平台 wheel、脱敏验证 JSON 与真实 Chromium 截图。
 
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
