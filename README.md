@@ -6,7 +6,7 @@ v1.0.0 是可运行的开源 CLI 与可选私有团队服务：除受控生成�
 
 它不改原工作区的代码，不批准 PR、merge 或部署。长期目标是完整研发交付平台，先验证这个具体环节的价值。
 
-已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[产品首页](https://guannan1031.github.io/yanxu-dev/) · [演示视频脚本](docs/DEMO_VIDEO_SCRIPT_V1.md) · [运行证据与简历表述](docs/VALIDATION.md) · [私有化试点服务包](docs/PILOT_OFFER.md) · [客户 UAT 与交接](docs/UAT_AND_HANDOVER.md) · [私有团队工作台](docs/PILOT_DASHBOARD.md) · [团队 GitHub 同步演示](docs/team-github-demo.html) · [历史演示报告 HTML](docs/review-demo.html)。
+已完成 [真实 PR 演示](https://github.com/guannan1031/yanxu-dev/pull/1)：CI 失败 → AI 诊断 → 开发者修复 → 旧报告过期 → PR/main CI 通过。[产品首页](https://guannan1031.github.io/yanxu-dev/) · [演示视频脚本](docs/DEMO_VIDEO_SCRIPT_V1.md) · [运行证据与简历表述](docs/VALIDATION.md) · [私有化试点服务包](docs/PILOT_OFFER.md) · [试点启动模板](docs/PILOT_KICKOFF_TEMPLATE.md) · [客户 UAT 与交接](docs/UAT_AND_HANDOVER.md) · [私有团队工作台](docs/PILOT_DASHBOARD.md) · [团队 GitHub 同步演示](docs/team-github-demo.html) · [历史演示报告 HTML](docs/review-demo.html)。
 
 v0.2 新增：[受限补丁准备与回放验证](docs/PATCH_PREPARATION.md)。
 

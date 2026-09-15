@@ -1,0 +1,78 @@
+name: Yanxu Dev 试点申请
+description: 申请一次固定范围的 AI Coding 交付治理试点
+title: "Yanxu Dev 试点咨询："
+labels:
+  - pilot
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢关注 Yanxu Dev。请只填写非敏感的范围信息，不要粘贴源码、内部 URL、CI 日志、Token、Webhook secret、数据库密码、个人联系方式或客户文件。
+        详细范围确认后，再通过客户批准的私有渠道交换材料。
+  - type: input
+    id: team-size
+    attributes:
+      label: 团队规模
+      description: 例如 5–20 人；不要填写成员姓名。
+      placeholder: 5–20 人
+    validations:
+      required: true
+  - type: input
+    id: repository-count
+    attributes:
+      label: 计划接入仓库数
+      placeholder: 1–3 个
+    validations:
+      required: true
+  - type: input
+    id: task-type
+    attributes:
+      label: 第一类任务
+      description: 例如 Python bugfix、Java 小功能、测试补齐。
+      placeholder: Python bugfix
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: 主要技术栈
+      placeholder: Python / Java / Go
+    validations:
+      required: true
+  - type: dropdown
+    id: ci
+    attributes:
+      label: CI 平台
+      options:
+        - GitHub Actions
+        - GitLab CI
+        - 其他
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: 部署偏好
+      options:
+        - 客户本地或内网私有部署
+        - 临时验证机
+        - 尚未确定
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: 希望验证的结果
+      description: 例如减少重复测试整理时间、降低返工、补齐 PR/CI 证据。
+      placeholder: 我们希望验证……
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 信息边界确认
+      options:
+        - label: 我确认没有在此 Issue 中提交源码、日志、凭据、内部地址或个人联系方式。
+          required: true
+        - label: 我理解试点报价、真实提效比例和商业结果需要在双方确认后测量，不会由 Issue 自动承诺。
+          required: true
