@@ -1,26 +1,143 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>研序 · PR #1 交付审查</title><link rel="icon" href="data:,"><style>
-    *{box-sizing:border-box}body{margin:0;background:#f3f5f1;color:#203a2d;font:15px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;line-height:1.8}header{background:#1b3429;color:#e4f0e5;padding:35px max(5vw,20px)}main{max-width:1160px;margin:auto;padding:32px 20px}h1{font-size:30px;line-height:1.4}h2{font-size:20px}h3{font-size:16px}p{overflow-wrap:anywhere}a{color:#36734b}header a{color:#c1e5b1}.eyebrow{letter-spacing:3px;font-size:12px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.card,section{background:white;border:1px solid #dbe5da;border-radius:14px;padding:24px;margin-bottom:20px}.card b{display:block;font-size:25px}.muted{color:#61766a;font-size:13px}.badge{display:inline-block;background:#f7eacb;color:#795020;border-radius:18px;padding:3px 12px;font-size:13px}.binding{overflow-wrap:anywhere;font:12px ui-monospace,monospace}article{border-left:3px solid #7ba077;padding:8px 20px;background:#f5f8f2;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f6f0;border-radius:7px;padding:16px;font-size:12px;line-height:1.7}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;border-bottom:1px solid #e1e7df;padding:10px}.scroll{overflow:auto}summary{cursor:pointer;padding:12px 0}li{margin:7px 0}footer{font-size:12px;color:#65786a;padding:24px 0}button{border:1px solid #9db59e;color:#dcebdc;background:transparent;border-radius:7px;padding:7px 15px;cursor:pointer}@media(max-width:700px){.grid{grid-template-columns:1fr}h1{font-size:24px}section{padding:18px}}@media print{button{display:none}body{background:white}header{color:#203a2d;background:white}section{break-inside:avoid}}
-    </style></head><body><div style="padding:18px 24px;background:#fff1cf;color:#654820">历史失败演示（已修复） · 这是旧版诊断快照，并非当前运行故障。v0.2 已增加 <a href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/PATCH_PREPARATION.md">受限补丁准备</a>。演示 PR 已修复并合并，<a href="https://github.com/guannan1031/yanxu-dev/pull/1">查看完整记录</a>。约 37 秒是本次报告生成耗时，不是研发提效比例。<a href="console.html">打开 Yanxu Dev Console 工作台原型 →</a></div><header><div class="eyebrow">YANXU DEV / PR DELIVERY REVIEW</div><h1>Demo: diagnose and fix a pagination regression</h1><p><a href="https://github.com/guannan1031/yanxu-dev/pull/1" target="_blank" rel="noopener noreferrer">guannan1031/yanxu-dev #1 ↗</a> · 2026-09-13T11:09:53.303952+00:00</p><button onclick="window.print()">打印报告</button></header><main>
-    <div class="grid"><div class="card"><span class="muted">确定性检查</span><b>BLOCKED</b><span class="muted">不执行自动 merge</span></div><div class="card"><span class="muted">AI 诊断</span><b>已完成</b><span class="muted">依据本次采集的代码与检查</span></div><div class="card"><span class="muted">报告生成耗时</span><b>37.0s</b><span class="muted">机器墙钟时间，不是人工净节省</span></div></div>
-    <section><h2>当前结论</h2><p>PR #1 修改了 `sample/pagination.py` 的分页起始下标计算，当前 CI 至少在 Python 3.13 上失败；Python 3.11 检查被取消，不能视为通过。</p><ul><li>Check test (3.11): cancelled</li><li>Check test (3.13): failure</li></ul><p class="muted">敏感路径：本次未识别 · 当前 head 的审批人数：0</p></section>
-    <section><h2>AI 发现与修复建议</h2><article><b>高 · sample/pagination.py</b><p>PR diff 将 `start = (page - 1) * size` 改为 `start = page * size`。文件内文档字符串写明 `Return a one-based page`。CI 日志 `test (3.13)` 显示 `tests/test_sample.py:8` 中 `paginate([1, 2, 3, 4, 5], 1, 2)` 实际返回 `[3, 4]`，期望 `[1, 2]`；`tests/test_sample.py:11` 中 `paginate([1, 2, 3, 4, 5], 3, 2)` 实际返回 `[]`，期望 `[5]`。</p><p><strong>建议：</strong>恢复一基页码的偏移计算：`start = (page - 1) * size`。</p></article><ol><li>观察：`test (3.13)` 运行 `python -m unittest discover -s tests -v`，21 个测试中 2 个失败，均指向分页返回窗口后移。</li><li>假设：项目的分页契约是页码从 1 开始，因为 `sample/pagination.py` 文档字符串和现有独立测试都按一基页码断言。</li><li>修复：只改回 `sample/pagination.py` 中 `start` 的计算，不修改测试。</li><li>验证：重新运行 `python -m unittest discover -s tests -v`，并确认 Python 3.13 失败项消失；同时需要重新触发或检查 Python 3.11，因为当前证据中该检查结论为 `cancelled`。</li></ol><details><summary>查看建议补丁 · 尚未应用或验证</summary><pre>diff --git a/sample/pagination.py b/sample/pagination.py
-index 0000000..0000000 100644
---- a/sample/pagination.py
-+++ b/sample/pagination.py
-@@ -2,5 +2,5 @@ def paginate(items, page, size):
-     &quot;&quot;&quot;Return a one-based page; reject non-positive page and size.&quot;&quot;&quot;
-     if page &lt; 1 or size &lt; 1:
-         raise ValueError(&quot;page and size must be positive&quot;)
--    start = page * size
-+    start = (page - 1) * size
-     return items[start:start + size]
-</pre></details></section>
-    <section><h2>CI 原始状态</h2><div class="scroll"><table><thead><tr><th>检查</th><th>来源</th><th>结果</th><th>证据</th></tr></thead><tbody><tr><td>test (3.11)</td><td>github-actions</td><td>cancelled</td><td><a href="https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397291" target="_blank" rel="noopener noreferrer">查看检查 ↗</a></td></tr><tr><td>test (3.13)</td><td>github-actions</td><td>failure</td><td><a href="https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587/job/103714397390" target="_blank" rel="noopener noreferrer">查看检查 ↗</a></td></tr></tbody></table></div><p class="muted">Legacy status：[]</p></section>
-    <section><h2>版本与可追溯性</h2><p>HEAD <span class="binding">74e0c96166d0adaca4aeff0705a25be7439bd1ac</span><br>BASE <span class="binding">cf0311606643d34f7a0d91633b717d305da577ca</span></p><p class="binding">EVIDENCE 8ab12be5957e53f05d0500cfe745dba570b7a6d3cbeba30ae9196227450c94cc</p><p>合并前执行 <code>python -m yanxu verify &lt;本次 evidence.json&gt;</code>，核对提交、基线、CI 和 Review 是否变化。UNCHANGED 仅表示本次重新采集时一致。</p></section>
-    <section><h2>代码改动上下文</h2><details><summary>sample/pagination.py · +1 / −1</summary><pre>@@ -2,5 +2,5 @@ def paginate(items, page, size):
-     &quot;&quot;&quot;Return a one-based page; reject non-positive page and size.&quot;&quot;&quot;
-     if page &lt; 1 or size &lt; 1:
-         raise ValueError(&quot;page and size must be positive&quot;)
--    start = (page - 1) * size
-+    start = page * size
-     return items[start:start + size]</pre></details></section><section><h2>能力边界与费用</h2><ul><li>未执行任何命令或读取仓库文件；诊断仅基于提供的 UNTRUSTED_SNAPSHOT。</li><li>`test (3.11)` 的检查结论是 `cancelled`，没有可用失败或通过日志。</li><li>补丁中的 blob index 未知，因此以占位 `0000000..0000000` 表示，供人工审阅后应用。</li><li>这是只读诊断报告，不是审批或合并授权。报告生成后，PR 和 CI 仍可能变化。</li><li>未测量人工基线，不能从报告耗时推导研发效率提升百分比。</li><li>AI 修复建议未经执行；人工审查、修复、验证和部署均需另行完成。</li></ul><p class="muted">执行器：codex-cli 0.137.0；Token 用量：{&quot;input_tokens&quot;: 26575, &quot;cached_input_tokens&quot;: 0, &quot;output_tokens&quot;: 719, &quot;reasoning_output_tokens&quot;: 56}；金额：未核算。</p></section><footer>研序 · Yanxu Dev v0.1 · 开源 PR / CI 诊断助手 · 报告可能包含仓库内容，请按仓库原有范围分享。</footer></main></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="研序 Yanxu Dev：可私有部署的 AI Coding 交付治理平台，连接受控代码生成、测试、PR/CI、审计与试点验收。">
+  <meta name="theme-color" content="#071412">
+  <title>研序 Yanxu Dev｜AI Coding 交付治理平台</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23071412'/%3E%3Cpath d='M16 18h32v8H25v8h18v8H25v4h23v8H16z' fill='%236de6b7'/%3E%3C/svg%3E">
+  <style>
+    :root{--ink:#071412;--panel:#10211e;--panel2:#152a26;--text:#f2fbf7;--muted:#a8c0b7;--line:#29463e;--mint:#6de6b7;--mint2:#bdf9df;--amber:#f8c76a;--paper:#eef5f1;--darkText:#15342d;--max:1180px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--ink);color:var(--text);font:16px/1.65 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI","PingFang SC",sans-serif}a{color:inherit}button,a{touch-action:manipulation}.wrap{width:min(var(--max),calc(100% - 40px));margin:auto}.site-nav{position:sticky;top:0;z-index:20;background:rgba(7,20,18,.9);border-bottom:1px solid rgba(109,230,183,.18);backdrop-filter:blur(14px)}.nav-inner{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-weight:780;letter-spacing:.02em}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--mint);border-radius:10px;color:var(--mint);font-weight:900}.nav-links{display:flex;align-items:center;gap:22px;color:var(--muted);font-size:.9rem}.nav-links a{text-decoration:none}.nav-links a:hover,.nav-links a:focus-visible{color:var(--mint)}.nav-cta{padding:9px 14px;border:1px solid var(--mint);border-radius:9px;color:var(--mint)!important}.hero{padding:82px 0 62px;overflow:hidden}.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center}.eyebrow{margin:0 0 18px;color:var(--mint);font-weight:760;letter-spacing:.12em;text-transform:uppercase;font-size:.78rem}.hero h1{margin:0;max-width:780px;font-size:clamp(2.6rem,6vw,5.6rem);line-height:.98;letter-spacing:-.055em}.hero h1 span{display:block;color:var(--mint)}.lead{max-width:680px;margin:28px 0 0;color:#c6d8d1;font-size:clamp(1rem,1.5vw,1.2rem)}.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 19px;border-radius:10px;border:1px solid var(--line);text-decoration:none;font-weight:750}.btn-primary{background:var(--mint);border-color:var(--mint);color:#06251c}.btn-secondary{color:var(--text)}.btn:hover,.btn:focus-visible{transform:translateY(-1px);box-shadow:0 8px 30px rgba(109,230,183,.12)}.proof-panel{position:relative;padding:26px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,var(--panel),#0b1a17)}.proof-panel:before{content:"";position:absolute;inset:-70px -90px auto auto;width:220px;height:220px;border:1px solid rgba(109,230,183,.18);border-radius:50%;box-shadow:0 0 90px rgba(109,230,183,.08)}.window-top{display:flex;align-items:center;gap:7px;padding-bottom:18px;border-bottom:1px solid var(--line)}.dot{width:8px;height:8px;border-radius:50%;background:#3c5a52}.dot.live{background:var(--mint)}.window-label{margin-left:auto;color:var(--muted);font:700 .76rem ui-monospace,SFMono-Regular,Consolas,monospace}.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}.metric{min-height:112px;padding:16px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025)}.metric strong{display:block;font-size:1.65rem;line-height:1.15;color:var(--mint2)}.metric span{display:block;margin-top:8px;color:var(--muted);font-size:.83rem}.evidence-line{display:flex;align-items:center;gap:9px;margin-top:18px;color:#c5d8d0;font:700 .78rem ui-monospace,SFMono-Regular,Consolas,monospace}.evidence-line:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 16px var(--mint)}.trust{border-block:1px solid var(--line);background:#091916}.trust-grid{display:grid;grid-template-columns:repeat(4,1fr)}.trust-item{padding:24px;border-right:1px solid var(--line)}.trust-item:last-child{border:0}.trust-item b{display:block;color:var(--mint2);font-size:1.05rem}.trust-item span{display:block;color:var(--muted);font-size:.82rem;margin-top:3px}.section{padding:90px 0}.section[id]{scroll-margin-top:82px}.section.light{background:var(--paper);color:var(--darkText)}.section-head{display:grid;grid-template-columns:.75fr 1.25fr;gap:50px;margin-bottom:44px}.section h2{margin:0;font-size:clamp(2rem,4vw,3.5rem);line-height:1.05;letter-spacing:-.045em}.section-intro{margin:3px 0 0;color:var(--muted);max-width:680px}.light .section-intro{color:#577068}.flow-layout{display:grid;grid-template-columns:360px 1fr;gap:24px}.flow-list{display:flex;flex-direction:column;gap:9px}.flow-step{width:100%;padding:16px 18px;text-align:left;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.flow-step b{color:inherit}.flow-step[aria-pressed="true"]{background:var(--mint);border-color:var(--mint);color:#06251c}.flow-step small{display:block;margin-top:2px;font-size:.78rem}.flow-detail{min-height:430px;padding:34px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}.flow-detail .phase{color:var(--amber);font:750 .8rem ui-monospace,SFMono-Regular,Consolas,monospace}.flow-detail h3{font-size:2rem;line-height:1.15;margin:13px 0}.flow-detail p{color:#c4d6cf;max-width:700px}.io-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}.io{padding:15px;border:1px solid var(--line);border-radius:10px}.io label{display:block;color:var(--muted);font-size:.76rem;text-transform:uppercase;letter-spacing:.08em}.io span{display:block;margin-top:6px}.gate{margin-top:24px;padding:16px 18px;border-left:3px solid var(--amber);background:rgba(248,199,106,.06);color:#f5deb1}.proof-cards,.package-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.proof-card,.package{padding:25px;border:1px solid #cadbd4;border-radius:14px;background:#fff}.proof-card .number{display:block;font-size:2.2rem;font-weight:850;line-height:1;color:#0b7056}.proof-card h3,.package h3{margin:14px 0 8px}.proof-card p,.package p,.package li{color:#526c63}.proof-card a{color:#086f57;font-weight:720}.report-band{display:grid;grid-template-columns:1fr 1fr;gap:42px;align-items:center;margin-top:44px;padding:34px;background:#0d201c;color:var(--text);border-radius:18px}.report-band img{width:100%;border-radius:10px;border:1px solid #34554c}.report-band p{color:#bed1c9}.fingerprint{font:700 .76rem/1.6 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--mint);overflow-wrap:anywhere}.package{position:relative;background:var(--panel);border-color:var(--line);color:var(--text)}.package.featured{border-color:var(--mint);box-shadow:0 0 0 1px var(--mint)}.package-tag{position:absolute;top:18px;right:18px;padding:4px 9px;border-radius:99px;background:var(--mint);color:#06251c;font-size:.75rem;font-weight:800}.price{font-size:2rem;font-weight:860;color:var(--mint2)}.package ul{padding-left:20px}.package li{margin:8px 0;color:#bed1c9}.package .btn{width:100%;margin-top:10px}.boundary{margin-top:28px;padding:20px 22px;border:1px solid var(--line);border-radius:12px;color:var(--muted)}.compare{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:stretch}.compare-card{padding:28px;border:1px solid var(--line);border-radius:15px;background:var(--panel)}.compare-card h3{font-size:1.4rem}.compare-card p{color:var(--muted)}.plus{align-self:center;color:var(--mint);font-size:2rem}.closing{padding:88px 0;background:var(--mint);color:#06251c}.closing-grid{display:flex;align-items:end;justify-content:space-between;gap:42px}.closing h2{max-width:700px;margin:0;font-size:clamp(2.2rem,5vw,4.4rem);line-height:1;letter-spacing:-.05em}.closing p{max-width:430px}.closing .btn-primary{background:var(--ink);border-color:var(--ink);color:var(--text)}footer{padding:34px 0;color:var(--muted);font-size:.86rem}.footer-grid{display:flex;justify-content:space-between;gap:20px}.footer-grid nav{display:flex;gap:18px;flex-wrap:wrap}@media(max-width:900px){.hero-grid,.section-head,.flow-layout,.report-band{grid-template-columns:1fr}.hero{padding-top:58px}.trust-grid,.proof-cards,.package-grid{grid-template-columns:1fr 1fr}.flow-list{display:grid;grid-template-columns:1fr 1fr}.closing-grid{align-items:flex-start;flex-direction:column}}@media(max-width:620px){.wrap{width:min(100% - 28px,var(--max))}.nav-links a:not(.nav-cta){display:none}.hero{padding:46px 0}.hero-grid{gap:36px}.metric-grid,.trust-grid,.proof-cards,.package-grid,.io-grid,.flow-list{grid-template-columns:1fr}.trust-item{border-right:0;border-bottom:1px solid var(--line)}.flow-detail{min-height:0;padding:24px}.compare{grid-template-columns:1fr}.plus{text-align:center}.section{padding:64px 0}.closing{padding:64px 0}.footer-grid{flex-direction:column}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}}
+  </style>
+</head>
+<body>
+  <nav class="site-nav" aria-label="主导航">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top"><span class="brand-mark">研</span><span>研序 Yanxu Dev</span></a>
+      <div class="nav-links">
+        <a href="#workflow">工作流</a><a href="#evidence">验证证据</a><a href="#pilot">试点方案</a><a class="nav-cta" href="https://github.com/guannan1031/yanxu-dev" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Open-source core · Private pilot ready · v1.0.0</p>
+        <h1>让 AI 写代码，<span>让交付有证据。</span></h1>
+        <p class="lead">研序把任务范围、受控代码生成、隔离测试、PR/CI、人工合并、审计与客户验收连成一条可追溯链路。团队可以继续使用 Codex 等 Coding Agent，并在自己的环境中控制它如何进入研发流程。</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0" target="_blank" rel="noopener noreferrer">下载 v1.0.0</a>
+          <a class="btn btn-secondary" href="#workflow">查看交付闭环</a>
+        </div>
+      </div>
+      <aside class="proof-panel" aria-label="v1.0 验证摘要">
+        <div class="window-top"><span class="dot live"></span><span class="dot"></span><span class="dot"></span><span class="window-label">release / verified</span></div>
+        <div class="metric-grid">
+          <div class="metric"><strong>119</strong><span>本地与 PostgreSQL 回归测试</span></div>
+          <div class="metric"><strong>4 / 4</strong><span>Linux、Windows、私有服务 CI</span></div>
+          <div class="metric"><strong>0</strong><span>真实 Chromium 控制台错误</span></div>
+          <div class="metric"><strong>1.0.0</strong><span>可安装跨平台 wheel</span></div>
+        </div>
+        <div class="evidence-line">release · v1.0.0 · checks passing</div>
+      </aside>
+    </div>
+  </header>
+
+  <section class="trust" aria-label="产品边界">
+    <div class="wrap trust-grid">
+      <div class="trust-item"><b>私有部署</b><span>FastAPI + PostgreSQL + Docker</span></div>
+      <div class="trust-item"><b>组织隔离</b><span>owner / viewer / 审计 / 撤权</span></div>
+      <div class="trust-item"><b>人工控制合并</b><span>检查失败即阻断，证据过期即重验</span></div>
+      <div class="trust-item"><b>真实测量</b><span>样本不足时保持 NOT_MEASURED</span></div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section" id="workflow">
+      <div class="wrap">
+        <div class="section-head"><h2>CI 在 merge 前后都运行</h2><p class="section-intro">merge 前验证“候选改动是否可以进入主分支”；merge 后验证“实际进入主分支的 commit 是否仍然成立”。研序把两次结果与代码版本绑定，旧报告不能替代新提交的检查。</p></div>
+        <div class="flow-layout">
+          <div class="flow-list" role="group" aria-label="研发交付阶段">
+            <button class="flow-step" aria-pressed="true" data-step="contract"><b>01 · 约束任务</b><small>任务合同与团队 Policy</small></button>
+            <button class="flow-step" aria-pressed="false" data-step="generate"><b>02 · 受控生成</b><small>允许路径与隔离测试</small></button>
+            <button class="flow-step" aria-pressed="false" data-step="premerge"><b>03 · merge 前</b><small>Draft PR、Review 与 PR CI</small></button>
+            <button class="flow-step" aria-pressed="false" data-step="postmerge"><b>04 · merge 后</b><small>main CI 与交付验收</small></button>
+          </div>
+          <div class="flow-detail" aria-live="polite">
+            <span class="phase" id="flow-phase">INPUT / POLICY</span>
+            <h3 id="flow-title">先把需求变成可验证合同</h3>
+            <p id="flow-copy">系统只读取白名单上下文，固化目标、非目标、允许修改的文件和批准的测试命令。Policy 指纹让后续改动可以核对是否越界。</p>
+            <div class="io-grid">
+              <div class="io"><label>输入</label><span id="flow-input">需求、项目规则、允许路径</span></div>
+              <div class="io"><label>处理</label><span id="flow-process">上下文合同、规则指纹</span></div>
+              <div class="io"><label>输出</label><span id="flow-output">可审查的任务 JSON / Markdown</span></div>
+            </div>
+            <div class="gate" id="flow-gate">验收：范围、测试和禁止项明确；不读取未授权业务源码。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section light" id="evidence">
+      <div class="wrap">
+        <div class="section-head"><h2>已验证的产品证据</h2><p class="section-intro">每个数字都有可打开的代码、CI 或 Release 依据。合成流程证明产品可运行，尚未替代外部客户的 UAT、付款和提效测量。</p></div>
+        <div class="proof-cards">
+          <article class="proof-card"><span class="number">v1.0.0</span><h3>公开可安装</h3><p>Release 提供跨平台 wheel、脱敏验证 JSON 和 Chromium 截图。</p><a href="https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0" target="_blank" rel="noopener noreferrer">核对 Release ↗</a></article>
+          <article class="proof-card"><span class="number">4 / 4</span><h3>双阶段 CI</h3><p>PR 合并前与 main 合并后均通过 Linux、Windows 和 PostgreSQL 检查。</p><a href="https://github.com/guannan1031/yanxu-dev/actions/runs/34918959505" target="_blank" rel="noopener noreferrer">核对 main CI ↗</a></article>
+          <article class="proof-card"><span class="number">SHA-256</span><h3>交付可对账</h3><p>试点 ZIP 与打印验收报告带内容指纹，便于发现导出内容变化。</p><a href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/VALIDATION.md">阅读验证边界 →</a></article>
+        </div>
+        <div class="report-band">
+          <img src="assets/v100-pilot-report.png" width="1280" height="1150" alt="使用合成组织数据生成的研序 v1.0 试点验收报告">
+          <div><p class="eyebrow">Pilot acceptance</p><h2>把“做完了”变成双方可核对的清单</h2><p>负责人记录验收标准、PASS/FAIL 证据、客户确认引用、支持分钟和实际成本。报告提供打印签字栏，同时明确它不是电子签名、付款证明或提效百分比证明。</p><p class="fingerprint">SCREENSHOT SHA-256<br>5cc093d6803f7663ba8f990cdf0a947dfd993d92a44bdf70977339f7b4a45f4a</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pilot">
+      <div class="wrap">
+        <div class="section-head"><h2>四周私有化试点</h2><p class="section-intro">价格用于验证客户意愿，尚不代表已有成交。模型、CI、云资源和超出范围的定制按实际发生单独记录。</p></div>
+        <div class="package-grid">
+          <article class="package"><h3>验证版</h3><div class="price">¥9,800</div><p>适合验证一个明确流程。</p><ul><li>1 个团队、1 个仓库</li><li>1 类任务与 1 份 Policy</li><li>私有部署、培训、验收报告</li><li>5 个工作日支持</li></ul><a class="btn btn-secondary" href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/PILOT_OFFER.md">查看范围</a></article>
+          <article class="package featured"><span class="package-tag">建议首选</span><h3>标准版</h3><div class="price">¥19,800</div><p>适合形成第一轮 ROI 证据。</p><ul><li>最多 3 个仓库、2 类任务</li><li>GitHub 流程接入</li><li>至少 5 对任务的测量支持</li><li>四周复盘与 UAT 交接</li></ul><a class="btn btn-primary" href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/PILOT_OFFER.md">查看试点方案</a></article>
+          <article class="package"><h3>深度版</h3><div class="price">¥29,800 起</div><p>适合复杂网络或流程适配。</p><ul><li>最多 5 个仓库</li><li>部署与连接器配置</li><li>规则模板与交接</li><li>约定范围内的技术适配</li></ul><a class="btn btn-secondary" href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/UAT_AND_HANDOVER.md">查看验收清单</a></article>
+        </div>
+        <p class="boundary"><strong>商业验证边界：</strong>当前没有已公开的付费客户、收入或真实团队提效百分比。至少 5 个同范围且两侧质量通过的配对任务后，才计算人工时间减少率；样本不足继续显示 <code>NOT_MEASURED</code>。</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="position-title">
+      <div class="wrap">
+        <div class="section-head"><h2 id="position-title">与 Coding Agent 组合使用</h2><p class="section-intro">研序复用成熟模型与执行器，把差异集中在团队规则、权限、版本证据、私有部署和效果验收。</p></div>
+        <div class="compare">
+          <article class="compare-card"><p class="eyebrow">Coding Agent / Superpowers</p><h3>帮助 Agent 更好地完成开发</h3><p>提供计划、实现、测试、调试和评审能力，解决“如何把代码写好”。</p></article>
+          <div class="plus" aria-hidden="true">+</div>
+          <article class="compare-card"><p class="eyebrow">Yanxu Dev</p><h3>帮助团队控制代码如何被交付</h3><p>限制范围、绑定 commit、核对 CI、保留审计并衡量试点结果，解决“团队如何安全验收”。</p></article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="closing">
+    <div class="wrap closing-grid">
+      <h2>从一个仓库开始，验证一次真实交付。</h2>
+      <div><p>先在自己的环境运行开源核心，再用固定范围试点核对团队价值。</p><div class="actions"><a class="btn btn-primary" href="https://github.com/guannan1031/yanxu-dev" target="_blank" rel="noopener noreferrer">查看源码与安装</a><a class="btn" href="https://github.com/guannan1031/yanxu-dev/issues/new?title=Yanxu%20Dev%20%E8%AF%95%E7%82%B9%E5%92%A8%E8%AF%A2" target="_blank" rel="noopener noreferrer">发起试点咨询</a></div></div>
+    </div>
+  </section>
+
+  <footer><div class="wrap footer-grid"><span>研序 Yanxu Dev · MIT 开源核心 · v1.0.0</span><nav aria-label="页脚导航"><a href="review-demo.html">历史 PR 诊断演示</a><a href="https://github.com/guannan1031/yanxu-dev/blob/main/docs/DEMO_VIDEO_SCRIPT_V1.md">演示视频脚本</a><a href="https://github.com/guannan1031/yanxu-dev">GitHub</a></nav></div></footer>
+
+  <script>
+    const flowContent={
+      contract:{phase:'INPUT / POLICY',title:'先把需求变成可验证合同',copy:'系统只读取白名单上下文，固化目标、非目标、允许修改的文件和批准的测试命令。Policy 指纹让后续改动可以核对是否越界。',input:'需求、项目规则、允许路径',process:'上下文合同、规则指纹',output:'可审查的任务 JSON / Markdown',gate:'验收：范围、测试和禁止项明确；不读取未授权业务源码。'},
+      generate:{phase:'AGENT / ISOLATED RUNNER',title:'代码在隔离副本中生成和测试',copy:'Coding Agent 只接收任务合同和明确允许的源码。补丁应用到不可变 HEAD 归档，执行开发者批准的测试命令，原工作区保持不变。',input:'任务合同、允许源码、测试命令',process:'生成补丁、路径校验、隔离测试',output:'Diff、测试结果、READY_FOR_HUMAN_REVIEW',gate:'验收：越界修改在模型调用前或补丁应用时拒绝；失败结果不会包装成成功。'},
+      premerge:{phase:'PULL REQUEST / PRE-MERGE CI',title:'候选改动先过 PR CI',copy:'Draft PR 发布前核对工作区、远端、base、head 与精确文件范围。PR CI 验证候选分支，Review 与检查未满足时保持阻断。',input:'候选分支、PR head、Review、checks',process:'版本绑定、状态归一、过期检测',output:'BLOCKED 或 MANUAL_REVIEW',gate:'验收：PR CI 通过只是合并条件之一；最终 merge 仍由开发者控制。'},
+      postmerge:{phase:'MAIN / POST-MERGE CI / UAT',title:'实际合并版本重新验证',copy:'main CI 对 merge commit 再执行一次，覆盖合并结果和主分支环境。团队工作台随后汇总验收、支持、成本和审计，形成试点证据。',input:'merge commit、main CI、验收记录',process:'重新核验、组织隔离汇总、指纹计算',output:'试点 ZIP 与打印验收报告',gate:'验收：技术证据可复算；外部客户签字、付款和真实提效仍由独立证据确认。'}
+    };
+    const fields={phase:document.getElementById('flow-phase'),title:document.getElementById('flow-title'),copy:document.getElementById('flow-copy'),input:document.getElementById('flow-input'),process:document.getElementById('flow-process'),output:document.getElementById('flow-output'),gate:document.getElementById('flow-gate')};
+    document.querySelectorAll('.flow-step').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.flow-step').forEach(item=>item.setAttribute('aria-pressed','false'));button.setAttribute('aria-pressed','true');const content=flowContent[button.dataset.step];Object.entries(fields).forEach(([key,node])=>node.textContent=content[key]);}));
+  </script>
+</body>
+</html>

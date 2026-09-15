@@ -100,7 +100,7 @@
 | 初始 main CI | Python 3.11/3.13 通过 | [运行 34753687601](https://github.com/guannan1031/yanxu-dev/actions/runs/34753687601) |
 | 制造独立测试可发现的缺陷 | `start = page * size` 违反一基页码约定 | 提交 `74e0c96166d0adaca4aeff0705a25be7439bd1ac` |
 | 合并前 CI 真失败 | 3.13 的两个分页断言失败；3.11 被矩阵 fail-fast 取消 | [运行 34753701587](https://github.com/guannan1031/yanxu-dev/actions/runs/34753701587) |
-| 真模型诊断 | Codex 指出了 off-by-one 问题，引用两个失败断言并建议一行修复 | [完整 evidence](demo-evidence.json)、[历史 HTML 报告](index.html) |
+| 真模型诊断 | Codex 指出了 off-by-one 问题，引用两个失败断言并建议一行修复 | [完整 evidence](demo-evidence.json)、[历史 HTML 报告](review-demo.html) |
 | 修复前重新核对 | `UNCHANGED` | [核对记录](demo-verify-before.json) |
 | 由开发者应用建议 | 恢复 `(page - 1) * size`；测试文件未更改 | 提交 `de182422b5ee5ed64fc029625dbaeb3b9f8740b1` |
 | 新提交使旧报告过期 | `STALE`，`changes=[head_sha]`，CLI 退出码 2 | [核对记录](demo-verify-after.json) |
