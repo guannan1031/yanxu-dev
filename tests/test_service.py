@@ -290,6 +290,17 @@ class PostgresServiceTests(unittest.TestCase):
             self.assertIn("support-ticket-001", dashboard.text)
             self.assertIn("45 分钟", dashboard.text)
 
+            report = client.get("/v1/pilot/report")
+            self.assertEqual(report.status_code, 200, report.text)
+            report_fingerprint = report.headers["x-yanxu-evidence-fingerprint"]
+            self.assertEqual(len(report_fingerprint), 64)
+            self.assertIn(report_fingerprint, report.text)
+            self.assertIn("Three repositories have CI evidence", report.text)
+            self.assertIn("customer-uat-001", report.text)
+            self.assertIn("客户代表 / 日期", report.text)
+            self.assertIn("NOT_MEASURED", report.text)
+            self.assertIn("default-src 'none'", report.headers["content-security-policy"])
+
             bundle = client.get("/v1/pilot/export")
             self.assertEqual(bundle.status_code, 200, repr(bundle.content[:200]))
             with zipfile.ZipFile(io.BytesIO(bundle.content)) as archive:
@@ -319,6 +330,7 @@ class PostgresServiceTests(unittest.TestCase):
             self.assertEqual(viewer_costs.json()["items"][0]["evidence_ref"], "pilot-invoice-001")
             self.assertEqual(client.get("/v1/pilot/acceptance").json()["summary"]["passed"], 1)
             self.assertEqual(client.get("/v1/pilot/support").json()["summary"]["minutes"], 45)
+            self.assertEqual(client.get("/v1/pilot/report").status_code, 200)
             self.assertEqual(client.post("/v1/costs", json={
                 "category": "ci", "amount": "1", "currency": "CNY",
                 "evidence_ref": "viewer-must-not-write",
@@ -338,5 +350,10 @@ class PostgresServiceTests(unittest.TestCase):
             self.assertNotIn("pilot-invoice-001", other_dashboard.text)
             self.assertNotIn("customer-uat-001", other_dashboard.text)
             self.assertNotIn("support-ticket-001", other_dashboard.text)
+            self.store.create_acceptance_item(self.other, "<script>alert(1)</script>")
+            other_report = client.get("/v1/pilot/report")
+            self.assertNotIn("customer-uat-001", other_report.text)
+            self.assertNotIn("<script>alert(1)</script>", other_report.text)
+            self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", other_report.text)
             self.assertEqual(client.get("/v1/audit/export").json()["organization_slug"],
                              self.other.organization_slug)

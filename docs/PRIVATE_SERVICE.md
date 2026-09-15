@@ -1,6 +1,6 @@
-# 私有团队服务 Alpha
+# 私有团队服务
 
-Yanxu Dev v0.20.0 把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件、试点验收、支持投入和实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、验收、支持、成本和审计记录，运维人员使用统一命令初始化、预检、备份和恢复。
+Yanxu Dev v1.0.0 候选版把本地 `team sync-github` 生成的标准化交付证据、已验证 GitHub Webhook 事件、试点验收、支持投入和实际成本保存到自己的 PostgreSQL。它面向有 GitHub/CI 的 5–50 人研发团队：开发者继续使用开源 CLI，技术负责人通过组织级 API 与[私有团队工作台](PILOT_DASHBOARD.md)查看持久化状态、验收、支持、成本和审计记录，运维人员使用统一命令初始化、预检、备份和恢复。
 
 ## 当前闭环
 
@@ -23,7 +23,7 @@ flowchart LR
 | 输入 | v0.15 `team-github.json` 标准化快照 |
 | 处理 | 验证组织、工作空间和字段白名单；按内容指纹幂等入库 |
 | 工具 | FastAPI、Psycopg、PostgreSQL、Docker Compose |
-| 输出 | 工作空间列表、最新快照、令牌清单、成本/审计 API、团队工作台与试点 ZIP |
+| 输出 | 工作空间列表、最新快照、令牌清单、成本/审计 API、团队工作台、试点 ZIP 与可打印验收报告 |
 | 权限 | `owner` 可写和管理令牌；`viewer` 只能读取本组织数据 |
 | 数据边界 | 不保存源码、diff、PR 正文、日志或明文令牌；成本证据只保存脱敏引用；服务仍不评论、审批、merge 或部署 |
 | 效率指标 | 减少负责人手工汇总 PR/CI 与交付证据的分钟数；真实百分比只用质量通过的配对任务计算 |
@@ -83,6 +83,7 @@ PowerShell 使用 `$env:YANXU_API_TOKEN` 保存当前会话的令牌。`publish-
 |---|---|---|---|
 | GET | `/healthz` | 无 | 数据库健康检查 |
 | GET | `/login`、`/app` | 浏览器会话 | 登录和查看本组织团队工作台 |
+| GET | `/v1/pilot/report` | 浏览器会话 | 生成本组织带 SHA-256 指纹的打印验收报告 |
 | POST | `/v1/session`、`/logout` | Token / 浏览器会话 | 创建短期 HttpOnly 会话或立即撤销 |
 | GET | `/v1/audit/export` | 浏览器会话 | 下载本组织带指纹审计 JSON |
 | GET/POST | `/v1/costs` | 读：浏览器会话；写：owner | 查询或记录本组织实际成本 |

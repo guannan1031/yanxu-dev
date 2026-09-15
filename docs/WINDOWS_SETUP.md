@@ -1,6 +1,6 @@
 # Windows 安装与迁移指南
 
-这份指南用于把 Yanxu Dev v0.20+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
+这份指南用于把 Yanxu Dev v1.0+ 从 macOS 迁移到 Windows，并在新电脑上恢复开发、测试、受控代码生成、Draft PR 工作流和可选私有团队服务。
 
 ## 选择 Windows 原生模式
 

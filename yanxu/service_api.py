@@ -48,7 +48,7 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
 
     app = FastAPI(
         title="Yanxu Dev Private Service",
-        version="0.20.0",
+        version="1.0.0",
         description="Organization-scoped storage for normalized Yanxu delivery evidence.",
         lifespan=lifespan,
     )
@@ -260,6 +260,20 @@ def create_app(database_url: str | None = None, bootstrap: dict | None = None,
                       body.evidence_ref)
         response.headers["Cache-Control"] = "no-store"
         return result
+
+    @app.get("/v1/pilot/report")
+    def pilot_report(request: Request):
+        from .pilot_dashboard import build_acceptance_report
+        try:
+            current = browser_principal(request)
+        except AuthenticationError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        content, fingerprint = build_acceptance_report(store, github_store, current)
+        response = html_response(content)
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="yanxu-pilot-report-{current.organization_slug}.html"')
+        response.headers["X-Yanxu-Evidence-Fingerprint"] = fingerprint
+        return response
 
     @app.get("/v1/pilot/export")
     def pilot_export(request: Request):
