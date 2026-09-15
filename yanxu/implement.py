@@ -212,12 +212,20 @@ def _working_tree_changes(checkout: Path) -> str:
     ])
 
 
-def _check_generated_patch(checkout: Path, proposal: str) -> None:
+def _check_generated_patch(sources: dict[str, str], proposal: str) -> None:
     with tempfile.TemporaryDirectory(prefix="yanxu-patch-check-") as temp:
+        workspace = Path(temp) / "workspace"
+        workspace.mkdir()
+        for name, content in sources.items():
+            target = workspace / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content.encode("utf-8"))
+        git("init", "--quiet", "--template=", str(workspace))
+        git("-C", str(workspace), "-c", "core.autocrlf=false", "add", "--", ".")
         patch_file = Path(temp) / "proposal.diff"
-        patch_file.write_text(proposal, encoding="utf-8")
+        patch_file.write_bytes(proposal.encode("utf-8"))
         try:
-            git("-C", str(checkout), "apply", "--check", "--", str(patch_file))
+            git("-C", str(workspace), "apply", "--check", "--", str(patch_file))
         except ReviewError as exc:
             raise ReviewError("AI patch is malformed or does not apply to the clean checkout") from exc
 
@@ -251,7 +259,7 @@ def run_implementation(contract: dict, checkout: Path, allow_paths: list[str], t
             paths = patch_paths(model["answer"]["suggested_patch"])
             if not set(paths).issubset(sources):
                 raise ReviewError("AI patch includes a path outside the explicit allowlist")
-            _check_generated_patch(checkout, model["answer"]["suggested_patch"])
+            _check_generated_patch(sources, model["answer"]["suggested_patch"])
             break
         except ReviewError as exc:
             rejected_attempts.append(str(exc))
