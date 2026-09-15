@@ -52,6 +52,8 @@ v0.20 新增：[试点验收与支持证据](docs/PILOT_ACCEPTANCE.md)。owner �
 
 v1.0 新增：`/v1/pilot/report` 生成适合打印或另存 PDF 的试点验收报告，把验收、客户确认记录、支持分钟和实际成本绑定为可复算 SHA-256 指纹。配套[客户 UAT 与交接清单](docs/UAT_AND_HANDOVER.md)和[私有化试点服务包](docs/PILOT_OFFER.md)把代码能力封装为可报价、可验收的固定范围交付。[v1.0.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) 提供跨平台 wheel、脱敏验证 JSON 与真实 Chromium 截图。
 
+v1.0.1 自测修复：`doctor` 对仓库根目录大文件的存在性独立检查，`implement` 在隔离测试前用提交中的原始 LF 文件预检 AI 补丁并对无效补丁重试一次。[v1.0.1 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.1) 提供跨平台 wheel 与[脱敏验证 JSON](https://github.com/guannan1031/yanxu-dev/releases/download/v1.0.1/yanxu-v1.0.1-validation.json)。
+
 [v0.10 实际模型运行报告](docs/controlled-implementation-demo.html) · [结构化运行证据](docs/controlled-implementation-demo.json)：合成小仓库的原测试失败，Codex 生成单文件补丁后隔离测试通过；该案例证明工作流可运行，不代表真实业务效率百分比。
 
 ## 快速开始
