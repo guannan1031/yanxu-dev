@@ -22,7 +22,7 @@ python -m yanxu implement runs/tasks/value/task.json \
 
 The model receives the requirement, acceptance conditions, task-contract context and only the explicitly allowed source files. It cannot call tools in this step. Yanxu accepts only a standard diff that modifies 1–10 existing UTF-8/LF source files. Test files, hidden files, additions, deletions, renames and files outside the allowlist are rejected.
 
-If the model's first response is empty or violates the patch boundary, Yanxu retries generation once. A second invalid result stops the run before any test or source modification.
+If the model's first response is empty, violates the patch boundary, or fails the Git apply precheck, Yanxu retries generation once. A second invalid result stops the run before any test or source modification.
 
 `READY_FOR_HUMAN_REVIEW` means the generated patch applied cleanly to the recorded `HEAD` archive and the named test command returned zero. The original checkout and GitHub remain unchanged. Review `proposal.diff` and `test-output.log`; then apply the accepted diff in a normal feature branch and use `draft-pr` to publish it.
 

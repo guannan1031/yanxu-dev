@@ -26,9 +26,9 @@ def inspect_repo(repo: Path) -> dict:
     safety_files = [name for name in ("SECURITY.md", "docs/SAFETY_BOUNDARY.md") if _regular(root / name)]
 
     checks = [
-        {"id": "project_rules", "title": "AI project rules", "passed": "AGENTS.md" in paths,
+        {"id": "project_rules", "title": "AI project rules", "passed": _regular(root / "AGENTS.md"),
          "critical": True, "fix": "Add AGENTS.md with scope, commands, safety boundaries, and acceptance rules."},
-        {"id": "readme", "title": "Project start guide", "passed": "README.md" in paths,
+        {"id": "readme", "title": "Project start guide", "passed": _regular(root / "README.md"),
          "critical": True, "fix": "Add README.md with setup, run, and verification instructions."},
         {"id": "build_metadata", "title": "Build metadata", "passed": bool(build_files),
          "critical": False, "fix": "Add a standard build file such as pyproject.toml, package.json, or pom.xml."},

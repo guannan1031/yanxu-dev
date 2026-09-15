@@ -17,6 +17,8 @@ python -m yanxu doctor --repo /path/to/repo --output runs/doctor
 
 输出 `doctor.json`、`doctor.md` 和独立 `doctor.html`。关键项缺失时状态为 `NEEDS_WORK`，报告给出最小整改动作；条件满足时为 `READY`。分数用于定位缺口，不代表代码质量、安全认证或生产就绪。
 
+`AGENTS.md` 和 `README.md` 的存在性按仓库根目录的常规文件判断。文件过大而未进入受限模型上下文时，报告仍会识别它们；上下文清单只表示本次允许传给 Agent 的内容。
+
 ## 工具边界与验收
 
 体检只读取项目规则、README、构建配置、CI、`.gitignore` 和安全说明等工程元数据，业务源码扫描数固定为 0；不运行代码、不调用模型、不访问 GitHub、不修改远端。验收要求是缺失项能被稳定识别，报告路径可打开，HTML 无浏览器报错。
