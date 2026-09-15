@@ -91,6 +91,14 @@
 
 公开证据：[v1.0.0 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.0) · [PR #29](https://github.com/guannan1031/yanxu-dev/pull/29) · [主分支 CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726972) · [GitHub Pages](https://github.com/guannan1031/yanxu-dev/actions/runs/34918726168)。从 GitHub 下载后复算：验证 JSON SHA-256 为 `fa83664ad15f815e3ef2c186be25b16ceffb89ddc1216827198f03513aabdce7`，wheel 为 `d8b67da93f7de3989dbd63f0b0f8122761543efa0c8c4a6e1096759a8d9455ae`，截图为 `5cc093d6803f7663ba8f990cdf0a947dfd993d92a44bdf70977339f7b4a45f4a`。该报告不是电子签名、付款证明、外部客户验收或提效百分比证明。
 
+## v1.0.1 自用回归（2026-09-15）
+
+- 对研序自己的仓库运行 `doctor`：已存在的 README 超过 20 KB 模型上下文上限，旧版误判为缺失并给出 `NEEDS_WORK 83`；修复后识别仓库根目录的实际文件，得到 `READY 100`，`workflow` 进入 `READY_FOR_IMPLEMENTATION`。模型上下文仍受大小约束。
+- 一次真实 Codex 受控实现输出了逻辑上可审查、但 diff hunk 计数错误的补丁，隔离应用失败；原工作区和 GitHub 未改动。v1.0.1 在调用隔离测试前，依据提交中的 LF 源文件做 Git apply 预检，无效补丁重试一次。该次真实模型任务没有成功生成可应用补丁，不能宣称已自动完成修复。
+- 本地执行 122 项测试通过（6 项 PostgreSQL 集成测试因未配置本地数据库而跳过）；PR 与 main 的 Linux Python 3.11/3.13、Windows Python 3.11、PostgreSQL 私有服务四项 CI 均通过。wheel 从合并后的 main 构建并完成版本与独立安装检查。
+
+公开证据：[PR #34](https://github.com/guannan1031/yanxu-dev/pull/34) · [PR CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34940363009) · [main CI](https://github.com/guannan1031/yanxu-dev/actions/runs/34940444954) · [v1.0.1 Release](https://github.com/guannan1031/yanxu-dev/releases/tag/v1.0.1)。wheel SHA-256：`7d6b33c86177da5308569b81921cb14fc5adf866eb4d17c8a355994f8617a804`；脱敏验证 JSON：`589afc37205467f508086cb4d28adf667515fb643b10c56a047d72f39414f57c`。这证明本仓库自用缺陷与回归修复，不是外部客户验收或节省工时的百分比。
+
 ## 真实集成记录
 
 公开合成示例：[PR #1](https://github.com/guannan1031/yanxu-dev/pull/1)。这是预先设计的分页回归，不是未知生产缺陷、盲测或客户任务。
@@ -133,7 +141,7 @@
 
 ## 今天可使用的简历表述
 
-> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v1.0.0）**
+> **研序 Yanxu Dev｜开源 AI Coding 交付治理平台（个人项目，v1.0.1）**
 > 设计并实现需求合同、团队 Policy、受控代码生成、隔离测试、PR/CI 证据核验和 Draft PR 交付闭环；实现 FastAPI + PostgreSQL 私有团队服务、组织隔离、owner/viewer、审计、GitHub Webhook 队列与 Docker 部署。浏览器工作台记录验收标准、客户确认、支持投入和分币种成本，导出带 SHA-256 manifest 的试点包与可打印验收报告；跨平台命令支持脱敏安装预检、数据库备份、篡改校验和单事务恢复。系统明确区分内部通过、客户确认记录和外部签字；提效未完成配对测量时保持 `NOT_MEASURED`。源码：https://github.com/guannan1031/yanxu-dev
 
 本项目使用 AI 辅助开发并复用开源执行器。个人贡献以能够讲解、修改和验证的内容为准；不要写成自研大模型、已经落地企业平台或有未经测量的提效百分比。
